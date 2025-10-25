@@ -27,6 +27,18 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
   const [aiFile, setAiFile] = useState<File | null>(null);
   const [aiBaseUrl, setAiBaseUrl] = useState('');
   const [useCustomZaiBaseUrl, setUseCustomZaiBaseUrl] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [explanation, setExplanation] = useState('');
+  const [stem, setStem] = useState('');
+  const [choices, setChoices] = useState<string[]>(['', '', '', '']);
+  const [correctIndex, setCorrectIndex] = useState(0);
+  const [qExplanation, setQExplanation] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editStem, setEditStem] = useState('');
+  const [editChoices, setEditChoices] = useState<string[]>(['', '', '', '']);
+  const [editCorrectIndex, setEditCorrectIndex] = useState(0);
+  const [editExplanation, setEditExplanation] = useState('');
 
   async function load() {
     setStatus(null);
