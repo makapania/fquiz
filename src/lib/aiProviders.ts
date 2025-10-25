@@ -95,8 +95,32 @@ export async function generateWithAnthropic(params: { apiKey: string; model?: st
   return parseMCQJson(text);
 }
 
+export async function generateWithGoogle(params: { apiKey: string; model?: string; inputText: string; count: number; baseUrl?: string }) {
+  const { apiKey, model = 'gemini-1.5-flash', inputText, count, baseUrl } = params;
+  const base = baseUrl || process.env.GOOGLE_GENAI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
+  const instructions = buildInstructions(inputText, count);
+  const url = `${base}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `You are a helpful assistant that outputs strictly JSON when asked.\n\n${instructions}` }]
+        }
+      ]
+    })
+  });
+  if (!resp.ok) throw new Error(await resp.text());
+  const data = await resp.json();
+  const text = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text || p).join('\n') || '';
+  return parseMCQJson(text);
+}
+
+
 export async function generateWithZAI(params: { apiKey: string; model?: string; inputText: string; count: number; baseUrl?: string }) {
-  const { apiKey, model = 'zai-chat', inputText, count, baseUrl } = params;
+  const { apiKey, model = 'glm-4.6', inputText, count, baseUrl } = params;
   const base = baseUrl || process.env.ZAI_BASE_URL || 'https://api.z.ai/api/paas/v4';
   const instructions = buildInstructions(inputText, count);
   const resp = await fetch(`${base}/chat/completions`, {
@@ -169,6 +193,66 @@ function parseFlashcardJson(raw: string): Flashcard[] {
   return normalized;
 }
 
+export async function generateWithOpenRouter(params: { apiKey: string; model?: string; inputText: string; count: number; siteUrl?: string; siteTitle?: string; baseUrl?: string }) {
+  const { apiKey, model = 'openai/gpt-4o', inputText, count, siteUrl, siteTitle, baseUrl } = params;
+  const base = baseUrl || process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+  const instructions = buildInstructions(inputText, count);
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  };
+  const referer = siteUrl || process.env.OPENROUTER_SITE_URL;
+  const title = siteTitle || process.env.OPENROUTER_SITE_TITLE;
+  if (referer) headers['HTTP-Referer'] = referer;
+  if (title) headers['X-Title'] = title;
+
+  const resp = await fetch(`${base}/chat/completions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant that outputs strictly JSON when asked.' },
+        { role: 'user', content: instructions },
+      ]
+    })
+  });
+  if (!resp.ok) throw new Error(await resp.text());
+  const data = await resp.json();
+  const text = data.choices?.[0]?.message?.content ?? '';
+  return parseMCQJson(text);
+}
+
+export async function generateFlashcardsWithOpenRouter(params: { apiKey: string; model?: string; inputText: string; count: number; siteUrl?: string; siteTitle?: string; baseUrl?: string }) {
+  const { apiKey, model = 'openai/gpt-4o', inputText, count, siteUrl, siteTitle, baseUrl } = params;
+  const base = baseUrl || process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+  const instructions = buildFlashcardInstructions(inputText, count);
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  };
+  const referer = siteUrl || process.env.OPENROUTER_SITE_URL;
+  const title = siteTitle || process.env.OPENROUTER_SITE_TITLE;
+  if (referer) headers['HTTP-Referer'] = referer;
+  if (title) headers['X-Title'] = title;
+
+  const resp = await fetch(`${base}/chat/completions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant that outputs strictly JSON when asked.' },
+        { role: 'user', content: instructions },
+      ]
+    })
+  });
+  if (!resp.ok) throw new Error(await resp.text());
+  const data = await resp.json();
+  const text = data.choices?.[0]?.message?.content ?? '';
+  return parseFlashcardJson(text);
+}
+
 export async function generateFlashcardsWithOpenAI(params: { apiKey: string; model?: string; inputText: string; count: number }) {
   const { apiKey, model = 'gpt-4o-mini', inputText, count } = params;
   const instructions = buildFlashcardInstructions(inputText, count);
@@ -207,8 +291,31 @@ export async function generateFlashcardsWithAnthropic(params: { apiKey: string; 
   return parseFlashcardJson(text);
 }
 
+export async function generateFlashcardsWithGoogle(params: { apiKey: string; model?: string; inputText: string; count: number; baseUrl?: string }) {
+  const { apiKey, model = 'gemini-1.5-flash', inputText, count, baseUrl } = params;
+  const base = baseUrl || process.env.GOOGLE_GENAI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
+  const instructions = buildFlashcardInstructions(inputText, count);
+  const url = `${base}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `You are a helpful assistant that outputs strictly JSON when asked.\n\n${instructions}` }]
+        }
+      ]
+    })
+  });
+  if (!resp.ok) throw new Error(await resp.text());
+  const data = await resp.json();
+  const text = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text || p).join('\n') || '';
+  return parseFlashcardJson(text);
+}
+
 export async function generateFlashcardsWithZAI(params: { apiKey: string; model?: string; inputText: string; count: number; baseUrl?: string }) {
-  const { apiKey, model = 'zai-chat', inputText, count, baseUrl } = params;
+  const { apiKey, model = 'glm-4.6', inputText, count, baseUrl } = params;
   const base = baseUrl || process.env.ZAI_BASE_URL || 'https://api.z.ai/api/paas/v4';
   const instructions = buildFlashcardInstructions(inputText, count);
   const resp = await fetch(`${base}/chat/completions`, {
