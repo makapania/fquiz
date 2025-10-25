@@ -39,6 +39,10 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
   const [editChoices, setEditChoices] = useState<string[]>(['', '', '', '']);
   const [editCorrectIndex, setEditCorrectIndex] = useState(0);
   const [editExplanation, setEditExplanation] = useState('');
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [editPrompt, setEditPrompt] = useState('');
+  const [editAnswer, setEditAnswer] = useState('');
+  const [editCardExplanation, setEditCardExplanation] = useState('');
 
   async function load() {
     setStatus(null);
