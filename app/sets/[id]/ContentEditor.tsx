@@ -587,137 +587,11 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
         </div>
       ) : type === 'quiz' ? (
             <div className="space-y-3">
-             <div className="flex flex-wrap gap-2 items-center">
-               <label className="inline-flex items-center gap-2 text-sm">
-                 <input type="radio" checked={aiSource==='prompt'} onChange={() => setAiSource('prompt')} />
-                 <span>From prompt</span>
-               </label>
-               <label className="inline-flex items-center gap-2 text-sm">
-                 <input type="radio" checked={aiSource==='upload'} onChange={() => setAiSource('upload')} />
-                 <span>From upload (.txt/.md)</span>
-               </label>
-             </div>
-             {aiSource === 'prompt' ? (
-               <div>
-                 <label className="block text-sm">Topic prompt</label>
-                 <textarea className="w-full rounded-md bg-surface p-2" value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="e.g., Questions about catarrhine primates or Australopithecus africanus" />
-               </div>
-             ) : (
-               <div>
-                 <label className="block text-sm">Upload file (.txt/.md)</label>
-                 <input type="file" accept=".txt,.md,text/plain,text/markdown" onChange={(e) => setAiFile(e.target.files?.[0] || null)} />
-               </div>
-             )}
-             <div className="flex flex-wrap items-end gap-3">
-               <div>
-                 <label className="block text-sm">Provider</label>
-                 <select className="rounded-md bg-surface p-2" value={aiProvider} onChange={(e) => setAiProvider(e.target.value as any)}>
-                   <option value="basic">Basic (uses default key)</option>
-                   <option value="openai">OpenAI</option>
-                   <option value="anthropic">Claude</option>
-                   <option value="zai">Z.ai</option>
-                   <option value="openrouter">OpenRouter</option>
-                   <option value="google">Google Gemini</option>
-                 </select>
-               </div>
-               <div>
-                 <label className="block text-sm">Model (optional)</label>
-                 <input className="rounded-md bg-surface p-2" type="text" value={aiModel} onChange={(e) => setAiModel(e.target.value)} placeholder={aiProvider==='openai' ? 'e.g., gpt-4o-mini' : aiProvider==='anthropic' ? 'e.g., claude-3-haiku-20240307' : aiProvider==='zai' ? 'zai-chat' : 'override default'} />
-               </div>
-              {aiProvider==='zai' && (
-                <div className="flex items-end gap-2">
-                  <div>
-                    <label className="block text-sm">Use custom base URL</label>
-                    <input type="checkbox" checked={useCustomZaiBaseUrl} onChange={(e) => setUseCustomZaiBaseUrl(e.target.checked)} />
-                  </div>
-                  {useCustomZaiBaseUrl ? (
-                    <div>
-                      <label className="block text-sm">Base URL</label>
-                      <input className="rounded-md bg-surface p-2" type="text" value={aiBaseUrl} onChange={(e) => setAiBaseUrl(e.target.value)} placeholder="https://api.z.ai/v1" />
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="block text-sm">Base URL</label>
-                      <input className="rounded-md bg-surface p-2" type="text" value={aiBaseUrl || 'https://api.z.ai/v1'} onChange={(e) => setAiBaseUrl(e.target.value)} />
-                    </div>
-                  )}
-                </div>
-              )}
-               <div className="flex-1">
-                 <label className="block text-sm">API Key (optional)</label>
-                 <input className="w-full rounded-md bg-surface p-2" type="password" value={aiKey} onChange={(e) => {
-                   const v = e.target.value;
-                   setAiKey(v);
-                   try {
-                     const email = session?.user?.email || null;
-                     if (email && rememberKeys) {
-                       const raw = localStorage.getItem(`fquiz:${email}:keys`);
-                       const keys = raw ? JSON.parse(raw) : {};
-                       keys[aiProvider] = v;
-                       localStorage.setItem(`fquiz:${email}:keys`, JSON.stringify(keys));
-                     }
-                   } catch {}
-                 }} placeholder={aiProvider==='openai' ? 'OpenAI API key' : aiProvider==='anthropic' ? 'Anthropic API key' : aiProvider==='zai' ? 'Z.ai API key' : aiProvider==='openrouter' ? 'OpenRouter API key' : aiProvider==='google' ? 'Google Generative AI API key' : 'leave blank to use env key'} />
-               </div>
-               <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateQuestionsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile) || !isDeveloper}>
-                {loading ? 'Generating...' : 'Generate 5 questions'}
-              </button>
-             </div>
-             <div className="flex items-center gap-3 text-sm">
-               <div className="flex items-center gap-2">
-                 <span className={`inline-block h-2 w-2 rounded-full ${authStatus==='healthy' ? 'bg-green-500' : authStatus==='degraded' ? 'bg-yellow-500' : authStatus==='offline' ? 'bg-gray-400' : authStatus==='error' ? 'bg-red-500' : 'bg-surface2'}`}></span>
-                 <span className="text-xs text-muted">
-                   {authStatus==='healthy' ? `Auth OK${authLatencyMs ? ` (${Math.round(authLatencyMs)} ms)` : ''}` :
-                    authStatus==='degraded' ? `Auth slow${authLatencyMs ? ` (${Math.round(authLatencyMs)} ms)` : ''}` :
-                    authStatus==='offline' ? 'Offline' :
-                    authStatus==='error' ? (authMessage ? `Auth error: ${authMessage}` : 'Auth error') :
-                    'Checking auth...'}
-                 </span>
-                 <button className="text-xs text-accent" onClick={() => checkAuthHealth()}>Retry</button>
-               </div>
-               {!session ? (
-                <div className="flex items-center gap-2">
-                  {(() => {
-                    const list = authProviders ? Object.values(authProviders) : [];
-                    if (list.length > 0) {
-                      return list.map((p) => (
-                        <button key={p.id} className="rounded-md bg-surface2 px-3 py-2" onClick={() => signIn(p.id)}>
-                          Sign in with {p.name}
-                        </button>
-                      ));
-                    }
-                    return (
-                      <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => signIn()}>
-                        Sign in
-                      </button>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <>
-                  <span className="text-muted">Signed in as {session.user?.email}</span>
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={rememberKeys} onChange={(e) => setRememberKeys(e.target.checked)} />
-                    <span>Remember my AI keys on this device</span>
-                  </label>
-                  {session?.user?.email === 'matt.sponheimer@gmail.com' && (
-                    <div className="inline-flex items-center gap-2">
-                      <label className="text-sm">Developer password</label>
-                      <input
-                        type="password"
-                        className="rounded-md bg-surface px-2 py-1 border border-muted"
-                        value={devPassword}
-                        onChange={(e) => setDevPassword(e.target.value)}
-                        placeholder="Enter to enable developer features"
-                      />
-                      <span className="text-xs text-muted">{isDeveloper ? 'Developer mode enabled' : 'Developer mode locked'}</span>
-                    </div>
-                  )}
-                  <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => signOut()}>Sign out</button>
-                </>
-              )}
-             </div>
-             <p className="text-xs text-muted">Generation returns strict JSON and inserts items into this set.</p>
+          <h3 className="text-lg font-semibold">Add Question Manually</h3>
+          <div>
+            <label className="block text-sm">Question</label>
+            <textarea className="w-full rounded-md bg-surface p-2" value={stem} onChange={(e) => setStem(e.target.value)} placeholder="Enter your question here..." />
+          </div>
           <div>
             <label className="block text-sm">Choices (A–D)</label>
             {choices.map((choice, i) => (
@@ -754,6 +628,144 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
           </div>
           <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={addQuestion} disabled={loading || !stem || choices.filter(Boolean).length < 2}>Add question</button>
 
+          <hr className="my-4 border-surface2" />
+
+          <h3 className="text-lg font-semibold">Or Generate with AI</h3>
+          <div className="flex flex-wrap gap-2 items-center">
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input type="radio" checked={aiSource==='prompt'} onChange={() => setAiSource('prompt')} />
+              <span>From prompt</span>
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input type="radio" checked={aiSource==='upload'} onChange={() => setAiSource('upload')} />
+              <span>From upload (.txt/.md)</span>
+            </label>
+          </div>
+          {aiSource === 'prompt' ? (
+            <div>
+              <label className="block text-sm">Topic prompt</label>
+              <textarea className="w-full rounded-md bg-surface p-2" value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="e.g., Questions about catarrhine primates or Australopithecus africanus" />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm">Upload file (.txt/.md)</label>
+              <input type="file" accept=".txt,.md,text/plain,text/markdown" onChange={(e) => setAiFile(e.target.files?.[0] || null)} />
+            </div>
+          )}
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label className="block text-sm">Provider</label>
+              <select className="rounded-md bg-surface p-2" value={aiProvider} onChange={(e) => setAiProvider(e.target.value as any)}>
+                <option value="basic">Basic (uses default key)</option>
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Claude</option>
+                <option value="zai">Z.ai</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="google">Google Gemini</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm">Model (optional)</label>
+              <input className="rounded-md bg-surface p-2" type="text" value={aiModel} onChange={(e) => setAiModel(e.target.value)} placeholder={aiProvider==='openai' ? 'e.g., gpt-4o-mini' : aiProvider==='anthropic' ? 'e.g., claude-3-haiku-20240307' : aiProvider==='zai' ? 'glm-4.6' : aiProvider==='openrouter' ? 'e.g., openai/gpt-4o-mini' : aiProvider==='google' ? 'e.g., gemini-1.5-flash' : 'override default'} />
+            </div>
+            {aiProvider==='zai' && (
+              <div className="flex items-end gap-2">
+                <div>
+                  <label className="block text-sm">Use custom base URL</label>
+                  <input type="checkbox" checked={useCustomZaiBaseUrl} onChange={(e) => setUseCustomZaiBaseUrl(e.target.checked)} />
+                </div>
+                {useCustomZaiBaseUrl ? (
+                  <div>
+                    <label className="block text-sm">Base URL</label>
+                    <input className="rounded-md bg-surface p-2" type="text" value={aiBaseUrl} onChange={(e) => setAiBaseUrl(e.target.value)} placeholder="https://api.z.ai/api/paas/v4" />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm">Base URL</label>
+                    <input className="rounded-md bg-surface p-2" type="text" value={aiBaseUrl || 'https://api.z.ai/api/paas/v4'} onChange={(e) => setAiBaseUrl(e.target.value)} />
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex-1">
+              <label className="block text-sm">API Key (optional)</label>
+              <input className="w-full rounded-md bg-surface p-2" type="password" value={aiKey} onChange={(e) => {
+                const v = e.target.value;
+                setAiKey(v);
+                try {
+                  const email = session?.user?.email || null;
+                  if (email && rememberKeys) {
+                    const raw = localStorage.getItem(`fquiz:${email}:keys`);
+                    const keys = raw ? JSON.parse(raw) : {};
+                    keys[aiProvider] = v;
+                    localStorage.setItem(`fquiz:${email}:keys`, JSON.stringify(keys));
+                  }
+                } catch {}
+              }} placeholder={aiProvider==='openai' ? 'OpenAI API key' : aiProvider==='anthropic' ? 'Anthropic API key' : aiProvider==='zai' ? 'Z.ai API key' : aiProvider==='openrouter' ? 'OpenRouter API key' : aiProvider==='google' ? 'Google Generative AI API key' : 'leave blank to use env key'} />
+            </div>
+            <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateQuestionsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile) || !isDeveloper}>
+              {loading ? 'Generating...' : 'Generate 5 questions'}
+            </button>
+          </div>
+          <div className="flex items-center gap-3 text-sm flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className={`inline-block h-2 w-2 rounded-full ${authStatus==='healthy' ? 'bg-green-500' : authStatus==='degraded' ? 'bg-yellow-500' : authStatus==='offline' ? 'bg-gray-400' : authStatus==='error' ? 'bg-red-500' : 'bg-surface2'}`}></span>
+              <span className="text-xs text-muted">
+                {authStatus==='healthy' ? `Auth OK${authLatencyMs ? ` (${Math.round(authLatencyMs)} ms)` : ''}` :
+                 authStatus==='degraded' ? `Auth slow${authLatencyMs ? ` (${Math.round(authLatencyMs)} ms)` : ''}` :
+                 authStatus==='offline' ? 'Offline' :
+                 authStatus==='error' ? (authMessage ? `Auth error: ${authMessage}` : 'Auth error') :
+                 'Checking auth...'}
+              </span>
+              <button className="text-xs text-accent" onClick={() => checkAuthHealth()}>Retry</button>
+            </div>
+            {!session ? (
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const list = authProviders ? Object.values(authProviders) : [];
+                  if (list.length > 0) {
+                    return list.map((p) => (
+                      <button key={p.id} className="rounded-md bg-surface2 px-3 py-2" onClick={() => signIn(p.id)}>
+                        Sign in with {p.name}
+                      </button>
+                    ));
+                  }
+                  return (
+                    <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => signIn()}>
+                      Sign in
+                    </button>
+                  );
+                })()}
+              </div>
+            ) : (
+              <>
+                <span className="text-muted">Signed in as {session.user?.email}</span>
+                <label className="inline-flex items-center gap-2">
+                  <input type="checkbox" checked={rememberKeys} onChange={(e) => setRememberKeys(e.target.checked)} />
+                  <span>Remember my AI keys on this device</span>
+                </label>
+                {session?.user?.email === 'matt.sponheimer@gmail.com' && (
+                  <div className="inline-flex items-center gap-2">
+                    <label className="text-sm">Developer password</label>
+                    <input
+                      type="password"
+                      className="rounded-md bg-surface px-2 py-1 border border-muted"
+                      value={devPassword}
+                      onChange={(e) => setDevPassword(e.target.value)}
+                      placeholder="Enter to enable developer features"
+                    />
+                    <span className="text-xs text-muted">{isDeveloper ? 'Developer mode enabled' : 'Developer mode locked'}</span>
+                  </div>
+                )}
+                <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => signOut()}>Sign out</button>
+              </>
+            )}
+          </div>
+          <p className="text-xs text-muted">Generation returns strict JSON and inserts items into this set.</p>
+
+          <hr className="my-4 border-surface2" />
+
+          <h3 className="text-lg font-semibold">Questions</h3>
           <ul className="space-y-2">
             {questions.map((q) => (
               <li key={q.id} className="rounded-md bg-surface p-3 space-y-2">
