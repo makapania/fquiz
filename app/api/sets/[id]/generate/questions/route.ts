@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { generateQuestionsBasic, generateQuestionsWithOpenAI, generateQuestionsWithAnthropic, generateQuestionsWithZAI, generateQuestionsWithOpenRouter, generateQuestionsWithGoogle } from '@/lib/aiProviders';
+import { authOptions } from '../../../../auth/[...nextauth]/route';
+import { generateBasic, generateWithOpenAI, generateWithAnthropic, generateWithZAI, generateWithOpenRouter, generateWithGoogle } from '@/lib/aiProviders';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
