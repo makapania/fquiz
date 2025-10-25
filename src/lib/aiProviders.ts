@@ -97,7 +97,7 @@ export async function generateWithAnthropic(params: { apiKey: string; model?: st
 
 export async function generateWithZAI(params: { apiKey: string; model?: string; inputText: string; count: number; baseUrl?: string }) {
   const { apiKey, model = 'zai-chat', inputText, count, baseUrl } = params;
-  const base = baseUrl || process.env.ZAI_BASE_URL || 'https://api.z.ai/v1';
+  const base = baseUrl || process.env.ZAI_BASE_URL || 'https://api.z.ai/api/paas/v4';
   const instructions = buildInstructions(inputText, count);
   const resp = await fetch(`${base}/chat/completions`, {
     method: 'POST',
@@ -209,7 +209,7 @@ export async function generateFlashcardsWithAnthropic(params: { apiKey: string; 
 
 export async function generateFlashcardsWithZAI(params: { apiKey: string; model?: string; inputText: string; count: number; baseUrl?: string }) {
   const { apiKey, model = 'zai-chat', inputText, count, baseUrl } = params;
-  const base = baseUrl || process.env.ZAI_BASE_URL || 'https://api.z.ai/v1';
+  const base = baseUrl || process.env.ZAI_BASE_URL || 'https://api.z.ai/api/paas/v4';
   const instructions = buildFlashcardInstructions(inputText, count);
   const resp = await fetch(`${base}/chat/completions`, {
     method: 'POST',

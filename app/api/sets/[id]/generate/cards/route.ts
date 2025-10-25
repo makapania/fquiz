@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
-import { generateFlashcardsBasic, generateFlashcardsWithOpenAI, generateFlashcardsWithAnthropic, generateFlashcardsWithZAI } from '@/lib/aiProviders';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { generateFlashcardsBasic, generateFlashcardsWithOpenAI, generateFlashcardsWithAnthropic, generateFlashcardsWithZAI, generateFlashcardsWithOpenRouter, generateFlashcardsWithGoogle } from '@/lib/aiProviders';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const session = await getServerSession(authOptions);
+    const email = session?.user?.email || '';
+    const devPass = req.headers.get('x-dev-password') || '';
+    const isDev = email === 'matt.sponheimer@gmail.com' && devPass === 'makapansgat';
+    if (!isDev) return NextResponse.json({ error: 'Developer-only feature' }, { status: 403 });
+
     const body = await req.json();
     const source = String(body.source || 'prompt'); // 'prompt' | 'upload'
-    const provider = String(body.provider || 'basic'); // 'basic' | 'openai' | 'anthropic' | 'zai'
+    const provider = String(body.provider || 'basic'); // 'basic' | 'openai' | 'anthropic' | 'zai' | 'openrouter' | 'google'
     const count = Math.max(1, Math.min(50, Number(body.count || 10)));
     const apiKey = body.api_key ? String(body.api_key) : undefined;
     const model = body.model ? String(body.model) : undefined;
@@ -44,6 +52,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       const key = apiKey || process.env.ZAI_API_KEY || '';
       if (!key) return NextResponse.json({ error: 'ZAI_API_KEY missing' }, { status: 400 });
       cards = await generateFlashcardsWithZAI({ apiKey: key, model, inputText, count, baseUrl });
+    } else if (provider === 'openrouter') {
+      const key = apiKey || process.env.OPENROUTER_API_KEY || '';
+      if (!key) return NextResponse.json({ error: 'OPENROUTER_API_KEY missing' }, { status: 400 });
+      const siteUrl = req.headers.get('referer') || undefined;
+      const siteTitle = 'FQuiz';
+      cards = await generateFlashcardsWithOpenRouter({ apiKey: key, model, inputText, count, siteUrl, siteTitle, baseUrl });
+    } else if (provider === 'google') {
+      const key = apiKey || process.env.GOOGLE_GENAI_API_KEY || '';
+      if (!key) return NextResponse.json({ error: 'GOOGLE_GENAI_API_KEY missing' }, { status: 400 });
+      cards = await generateFlashcardsWithGoogle({ apiKey: key, model, inputText, count, baseUrl });
     } else {
       cards = await generateFlashcardsBasic({ inputText, count });
     }

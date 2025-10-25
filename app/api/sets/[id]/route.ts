@@ -1,6 +1,25 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  try {
+    const supabase = supabaseServer();
+    const { data: set, error } = await supabase
+      .from('sets')
+      .select('*')
+      .eq('id', params.id)
+      .single();
+
+    if (error || !set) {
+      return new NextResponse('Set not found', { status: 404 });
+    }
+
+    return NextResponse.json(set);
+  } catch (e: any) {
+    return new NextResponse(e.message || 'Server error', { status: 500 });
+  }
+}
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const payload = await req.json();

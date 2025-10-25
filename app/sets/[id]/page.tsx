@@ -24,9 +24,38 @@ export default async function SetDetailPage({ params }: { params: { id: string }
           <PasscodeForm id={params.id} />
         ) : (
           <div className="space-y-4">
-            <div className="rounded-md bg-surface2 p-4">
-              <p>Content goes here (flashcards or quiz items).</p>
-            </div>
+            {set.type === 'quiz' && set.is_published && (
+              <div className="rounded-md bg-accent/20 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold">Take this quiz</h3>
+                    <p className="text-sm text-muted">Test your knowledge</p>
+                  </div>
+                  <Link
+                    href={`/sets/${params.id}/take`}
+                    className="rounded-md bg-accent px-6 py-2 font-medium text-white hover:bg-accent/90"
+                  >
+                    Start Quiz
+                  </Link>
+                </div>
+              </div>
+            )}
+            {set.type === 'flashcards' && set.is_published && (
+              <div className="rounded-md bg-accent/20 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold">Study these flashcards</h3>
+                    <p className="text-sm text-muted">Review and memorize</p>
+                  </div>
+                  <Link
+                    href={`/sets/${params.id}/study`}
+                    className="rounded-md bg-accent px-6 py-2 font-medium text-white hover:bg-accent/90"
+                  >
+                    Start Studying
+                  </Link>
+                </div>
+              </div>
+            )}
             <ContentEditor id={params.id} type={set.type} />
           </div>
         )}

@@ -1,44 +1,27 @@
 "use client";
 import React from 'react';
 import { useEffect, useState } from 'react';
+import { useSession, signIn, signOut, getProviders } from 'next-auth/react';
 
 type Card = { id: string; kind: string; prompt: string; answer: string; explanation?: string | null };
 type Question = { id: string; stem: string; choices: string[]; correct_index: number; explanation?: string | null };
 
 export default function ContentEditor({ id, type }: { id: string; type: 'flashcards' | 'quiz' }) {
+  const { data: session } = useSession();
   const [cards, setCards] = useState<Card[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-
-  // New flashcard inputs
-  const [prompt, setPrompt] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [explanation, setExplanation] = useState('');
-
-  // New question inputs
-  const [stem, setStem] = useState('');
-  const [choices, setChoices] = useState<string[]>(['', '', '', '']);
-  const [correctIndex, setCorrectIndex] = useState(0);
-  const [qExplanation, setQExplanation] = useState('');
-
-  // Edit question state
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editStem, setEditStem] = useState('');
-  const [editChoices, setEditChoices] = useState<string[]>(['', '', '', '']);
-  const [editCorrectIndex, setEditCorrectIndex] = useState(0);
-  const [editExplanation, setEditExplanation] = useState('');
-
-  // Flashcard edit state
-  const [editingCardId, setEditingCardId] = useState<string | null>(null);
-  const [editPrompt, setEditPrompt] = useState('');
-  const [editAnswer, setEditAnswer] = useState('');
-  const [editCardExplanation, setEditCardExplanation] = useState('');
-
-  // AI generation state (quiz only)
+  const [rememberKeys, setRememberKeys] = useState(false);
+  const [authStatus, setAuthStatus] = useState<'idle'|'healthy'|'degraded'|'error'|'offline'>('idle');
+  const [authLatencyMs, setAuthLatencyMs] = useState<number | null>(null);
+  const [authMessage, setAuthMessage] = useState<string | null>(null);
+  const [authProviders, setAuthProviders] = useState<Record<string, { id: string; name: string }> | null>(null);
+  const [devPassword, setDevPassword] = useState('');
+  const isDeveloper = (session?.user?.email === 'matt.sponheimer@gmail.com' && devPassword === 'makapansgat');
   const [aiSource, setAiSource] = useState<'prompt' | 'upload'>('prompt');
   const [aiPrompt, setAiPrompt] = useState('');
-  const [aiProvider, setAiProvider] = useState<'basic' | 'openai' | 'anthropic' | 'zai'>('basic');
+  const [aiProvider, setAiProvider] = useState<'basic' | 'openai' | 'anthropic' | 'zai' | 'openrouter' | 'google'>('basic');
   const [aiModel, setAiModel] = useState('');
   const [aiKey, setAiKey] = useState('');
   const [aiFile, setAiFile] = useState<File | null>(null);
@@ -71,13 +54,34 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
   useEffect(() => {
     if (aiProvider === 'zai') {
       if (!useCustomZaiBaseUrl) {
-        setAiBaseUrl('https://api.z.ai/v1');
+        setAiBaseUrl('https://api.z.ai/api/paas/v4');
       }
       if (!aiModel) {
-        setAiModel('zai-chat');
+        setAiModel('glm-4.6');
+      }
+    } else if (aiProvider === 'openrouter') {
+      if (!aiModel) {
+        setAiModel('openai/gpt-4o-mini');
+      }
+    } else if (aiProvider === 'google') {
+      if (!aiModel) {
+        setAiModel('gemini-1.5-flash');
       }
     }
-  }, [aiProvider, useCustomZaiBaseUrl]);
+    // Load remembered key for this provider if signed-in
+    try {
+      const email = session?.user?.email || null;
+      if (email && rememberKeys) {
+        const raw = localStorage.getItem(`fquiz:${email}:keys`);
+        if (raw) {
+          const keys = JSON.parse(raw || '{}');
+          if (keys && typeof keys === 'object' && keys[aiProvider]) {
+            setAiKey(keys[aiProvider] || '');
+          }
+        }
+      }
+    } catch {}
+  }, [aiProvider, useCustomZaiBaseUrl, session, rememberKeys]);
 
   async function addCard() {
     setLoading(true);
@@ -104,6 +108,43 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
   function idxToLetter(i: number) {
     return String.fromCharCode(65 + i);
   }
+
+  async function checkAuthHealth() {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setAuthStatus('offline');
+      setAuthLatencyMs(null);
+      setAuthMessage('Browser offline');
+      return;
+    }
+    try {
+      const start = performance.now();
+      const res = await fetch('/api/auth/session', { method: 'GET' });
+      const latency = performance.now() - start;
+      setAuthLatencyMs(latency);
+      if (!res.ok) {
+        setAuthStatus('error');
+        setAuthMessage(`${res.status} ${res.statusText}`);
+      } else {
+        setAuthMessage(null);
+        setAuthStatus(latency > 400 ? 'degraded' : 'healthy');
+      }
+    } catch (err: any) {
+      setAuthStatus('error');
+      setAuthLatencyMs(null);
+      setAuthMessage(err?.message || 'fetch failed');
+    }
+  }
+
+  useEffect(() => {
+    checkAuthHealth();
+    (async () => {
+      try {
+        const providers = await getProviders();
+        setAuthProviders(providers || null);
+      } catch {}
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function addQuestion() {
     setLoading(true);
@@ -236,17 +277,20 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
       if (aiProvider !== 'basic') {
         if (aiKey) payload.api_key = aiKey;
         if (aiModel) payload.model = aiModel;
-        if (aiProvider === 'zai') payload.base_url = aiBaseUrl || 'https://api.z.ai/v1';
+        if (aiProvider === 'zai') payload.base_url = aiBaseUrl || 'https://api.z.ai/api/paas/v4';
        } else if (aiModel) {
          payload.model = aiModel;
        }
 
       const res = await fetch(`/api/sets/${id}/generate/questions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-dev-password': devPassword },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to generate questions');
+      }
       const data = await res.json();
       await load();
       setStatus(`Generated ${data.inserted} questions`);
@@ -281,17 +325,20 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
       if (aiProvider !== 'basic') {
         if (aiKey) payload.api_key = aiKey;
         if (aiModel) payload.model = aiModel;
-        if (aiProvider === 'zai') payload.base_url = aiBaseUrl || 'https://api.z.ai/v1';
+        if (aiProvider === 'zai') payload.base_url = aiBaseUrl || 'https://api.z.ai/api/paas/v4';
        } else if (aiModel) {
          payload.model = aiModel;
        }
 
       const res = await fetch(`/api/sets/${id}/generate/cards`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-dev-password': devPassword },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to generate flashcards');
+      }
       const data = await res.json();
       await load();
       setStatus(`Generated ${data.inserted} flashcards`);
@@ -381,11 +428,13 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Claude</option>
                   <option value="zai">Z.ai</option>
+                  <option value="openrouter">OpenRouter</option>
+                  <option value="google">Google Gemini</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm">Model (optional)</label>
-                <input className="rounded-md bg-surface p-2" type="text" value={aiModel} onChange={(e) => setAiModel(e.target.value)} placeholder={aiProvider==='openai' ? 'e.g., gpt-4o-mini' : aiProvider==='anthropic' ? 'e.g., claude-3-haiku-20240307' : aiProvider==='zai' ? 'zai-chat' : 'override default'} />
+                <input className="rounded-md bg-surface p-2" type="text" value={aiModel} onChange={(e) => setAiModel(e.target.value)} placeholder={aiProvider==='openai' ? 'e.g., gpt-4o-mini' : aiProvider==='anthropic' ? 'e.g., claude-3-haiku-20240307' : aiProvider==='zai' ? 'e.g., glm-4.6' : aiProvider==='openrouter' ? 'e.g., openai/gpt-4o-mini' : aiProvider==='google' ? 'e.g., gemini-1.5-flash' : 'override default model'} />
               </div>
               {aiProvider==='zai' && (
                 <div className="flex items-end gap-2">
@@ -408,12 +457,117 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
               )}
               <div className="flex-1">
                 <label className="block text-sm">API Key (optional)</label>
-                <input className="w-full rounded-md bg-surface p-2" type="password" value={aiKey} onChange={(e) => setAiKey(e.target.value)} placeholder={aiProvider==='openai' ? 'OpenAI API key' : aiProvider==='anthropic' ? 'Anthropic API key' : aiProvider==='zai' ? 'Z.ai API key' : 'leave blank to use default'} />
+                <input className="w-full rounded-md bg-surface p-2" type="password" value={aiKey} onChange={(e) => {
+                  const v = e.target.value;
+                  setAiKey(v);
+                  try {
+                    const email = session?.user?.email || null;
+                    if (email && rememberKeys) {
+                      const raw = localStorage.getItem(`fquiz:${email}:keys`);
+                      const keys = raw ? JSON.parse(raw) : {};
+                      keys[aiProvider] = v;
+                      localStorage.setItem(`fquiz:${email}:keys`, JSON.stringify(keys));
+                    }
+                  } catch {}
+                }} placeholder={aiProvider==='openai' ? 'OpenAI API key' : aiProvider==='anthropic' ? 'Anthropic API key' : aiProvider==='zai' ? 'Z.ai API key' : aiProvider==='openrouter' ? 'OpenRouter API key' : aiProvider==='google' ? 'Google Generative AI API key' : 'leave blank to use env key'} />
               </div>
-              <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateFlashcardsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile)}>Generate 10 flashcards</button>
+              <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateFlashcardsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile) || !isDeveloper}>
+                {loading ? 'Generating...' : 'Generate 10 flashcards'}
+              </button>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <span className={`inline-block h-2 w-2 rounded-full ${authStatus==='healthy' ? 'bg-green-500' : authStatus==='degraded' ? 'bg-yellow-500' : authStatus==='offline' ? 'bg-gray-400' : authStatus==='error' ? 'bg-red-500' : 'bg-surface2'}`}></span>
+                <span className="text-xs text-muted">
+                  {authStatus==='healthy' ? `Auth OK${authLatencyMs ? ` (${Math.round(authLatencyMs)} ms)` : ''}` :
+                   authStatus==='degraded' ? `Auth slow${authLatencyMs ? ` (${Math.round(authLatencyMs)} ms)` : ''}` :
+                   authStatus==='offline' ? 'Offline' :
+                   authStatus==='error' ? (authMessage ? `Auth error: ${authMessage}` : 'Auth error') :
+                   'Checking auth...'}
+                </span>
+                <button className="text-xs text-accent" onClick={() => checkAuthHealth()}>Retry</button>
+              </div>
+              {!session ? (
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const list = authProviders ? Object.values(authProviders) : [];
+                    if (list.length > 0) {
+                      return list.map((p) => (
+                        <button key={p.id} className="rounded-md bg-surface2 px-3 py-2" onClick={() => signIn(p.id)}>
+                          Sign in with {p.name}
+                        </button>
+                      ));
+                    }
+                    return (
+                      <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => signIn()}>
+                        Sign in
+                      </button>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <>
+                  <span className="text-muted">Signed in as {session.user?.email}</span>
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={rememberKeys} onChange={(e) => setRememberKeys(e.target.checked)} />
+                    <span>Remember my AI keys on this device</span>
+                  </label>
+                  {session?.user?.email === 'matt.sponheimer@gmail.com' && (
+                    <div className="inline-flex items-center gap-2">
+                      <label className="text-sm">Developer password</label>
+                      <input
+                        type="password"
+                        className="rounded-md bg-surface px-2 py-1 border border-muted"
+                        value={devPassword}
+                        onChange={(e) => setDevPassword(e.target.value)}
+                        placeholder="Enter to enable developer features"
+                      />
+                      <span className="text-xs text-muted">{isDeveloper ? 'Developer mode enabled' : 'Developer mode locked'}</span>
+                    </div>
+                  )}
+                  <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => signOut()}>Sign out</button>
+                </>
+              )}
             </div>
             <p className="text-xs text-muted">Generation returns strict JSON and inserts items into this set.</p>
           </div>
+          <ul className="space-y-2">
+            {cards.map((c) => (
+              <li key={c.id} className="rounded-md bg-surface p-3 space-y-2">
+                {editingCardId === c.id ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm">Term</label>
+                      <textarea className="w-full rounded-md bg-surface p-2" value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm">Answer</label>
+                      <textarea className="w-full rounded-md bg-surface p-2" value={editAnswer} onChange={(e) => setEditAnswer(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm">Explanation (optional)</label>
+                      <textarea className="w-full rounded-md bg-surface p-2" value={editCardExplanation} onChange={(e) => setEditCardExplanation(e.target.value)} />
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={saveCardEdit} disabled={loading || !editPrompt || !editAnswer}>Save</button>
+                      <button className="rounded-md bg-surface2 px-3 py-2" onClick={cancelEditCard} disabled={loading}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="font-medium">{c.prompt}</p>
+                    <p className="text-sm">Answer: {c.answer}</p>
+                    {c.explanation && <p className="text-sm text-muted">{c.explanation}</p>}
+                    <div className="flex gap-2 pt-2">
+                      <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => startEditCard(c)} disabled={loading}>Edit</button>
+                      <button className="rounded-md bg-red-600 px-3 py-2 text-white" onClick={() => deleteCard(c.id)} disabled={loading}>Delete</button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            ))}
+            {cards.length === 0 && <li className="text-sm text-muted">No flashcards yet.</li>}
+          </ul>
         </div>
       ) : type === 'quiz' ? (
             <div className="space-y-3">
@@ -446,6 +600,8 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
                    <option value="openai">OpenAI</option>
                    <option value="anthropic">Claude</option>
                    <option value="zai">Z.ai</option>
+                   <option value="openrouter">OpenRouter</option>
+                   <option value="google">Google Gemini</option>
                  </select>
                </div>
                <div>
@@ -473,9 +629,77 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
               )}
                <div className="flex-1">
                  <label className="block text-sm">API Key (optional)</label>
-                 <input className="w-full rounded-md bg-surface p-2" type="password" value={aiKey} onChange={(e) => setAiKey(e.target.value)} placeholder={aiProvider==='openai' ? 'OpenAI API key' : aiProvider==='anthropic' ? 'Anthropic API key' : aiProvider==='zai' ? 'Z.ai API key' : 'leave blank to use default'} />
+                 <input className="w-full rounded-md bg-surface p-2" type="password" value={aiKey} onChange={(e) => {
+                   const v = e.target.value;
+                   setAiKey(v);
+                   try {
+                     const email = session?.user?.email || null;
+                     if (email && rememberKeys) {
+                       const raw = localStorage.getItem(`fquiz:${email}:keys`);
+                       const keys = raw ? JSON.parse(raw) : {};
+                       keys[aiProvider] = v;
+                       localStorage.setItem(`fquiz:${email}:keys`, JSON.stringify(keys));
+                     }
+                   } catch {}
+                 }} placeholder={aiProvider==='openai' ? 'OpenAI API key' : aiProvider==='anthropic' ? 'Anthropic API key' : aiProvider==='zai' ? 'Z.ai API key' : aiProvider==='openrouter' ? 'OpenRouter API key' : aiProvider==='google' ? 'Google Generative AI API key' : 'leave blank to use env key'} />
                </div>
-               <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateQuestionsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile)}>Generate 5 questions</button>
+               <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateQuestionsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile) || !isDeveloper}>
+                {loading ? 'Generating...' : 'Generate 5 questions'}
+              </button>
+             </div>
+             <div className="flex items-center gap-3 text-sm">
+               <div className="flex items-center gap-2">
+                 <span className={`inline-block h-2 w-2 rounded-full ${authStatus==='healthy' ? 'bg-green-500' : authStatus==='degraded' ? 'bg-yellow-500' : authStatus==='offline' ? 'bg-gray-400' : authStatus==='error' ? 'bg-red-500' : 'bg-surface2'}`}></span>
+                 <span className="text-xs text-muted">
+                   {authStatus==='healthy' ? `Auth OK${authLatencyMs ? ` (${Math.round(authLatencyMs)} ms)` : ''}` :
+                    authStatus==='degraded' ? `Auth slow${authLatencyMs ? ` (${Math.round(authLatencyMs)} ms)` : ''}` :
+                    authStatus==='offline' ? 'Offline' :
+                    authStatus==='error' ? (authMessage ? `Auth error: ${authMessage}` : 'Auth error') :
+                    'Checking auth...'}
+                 </span>
+                 <button className="text-xs text-accent" onClick={() => checkAuthHealth()}>Retry</button>
+               </div>
+               {!session ? (
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const list = authProviders ? Object.values(authProviders) : [];
+                    if (list.length > 0) {
+                      return list.map((p) => (
+                        <button key={p.id} className="rounded-md bg-surface2 px-3 py-2" onClick={() => signIn(p.id)}>
+                          Sign in with {p.name}
+                        </button>
+                      ));
+                    }
+                    return (
+                      <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => signIn()}>
+                        Sign in
+                      </button>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <>
+                  <span className="text-muted">Signed in as {session.user?.email}</span>
+                  <label className="inline-flex items-center gap-2">
+                    <input type="checkbox" checked={rememberKeys} onChange={(e) => setRememberKeys(e.target.checked)} />
+                    <span>Remember my AI keys on this device</span>
+                  </label>
+                  {session?.user?.email === 'matt.sponheimer@gmail.com' && (
+                    <div className="inline-flex items-center gap-2">
+                      <label className="text-sm">Developer password</label>
+                      <input
+                        type="password"
+                        className="rounded-md bg-surface px-2 py-1 border border-muted"
+                        value={devPassword}
+                        onChange={(e) => setDevPassword(e.target.value)}
+                        placeholder="Enter to enable developer features"
+                      />
+                      <span className="text-xs text-muted">{isDeveloper ? 'Developer mode enabled' : 'Developer mode locked'}</span>
+                    </div>
+                  )}
+                  <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => signOut()}>Sign out</button>
+                </>
+              )}
              </div>
              <p className="text-xs text-muted">Generation returns strict JSON and inserts items into this set.</p>
           <div>
@@ -580,7 +804,11 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
           </ul>
         </div>
       ) : null}
-      {status && <p className="text-sm">{status}</p>}
+      {status && (
+        <div className={`rounded-md p-3 ${status.includes('Generated') || status.includes('added') || status.includes('updated') || status.includes('deleted') ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+          <p className="text-sm font-medium">{status}</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,24 +1,26 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import MicrosoftProvider from 'next-auth/providers/azure-ad';
-import EmailProvider from 'next-auth/providers/email';
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-    }),
-    MicrosoftProvider({
-      clientId: process.env.MICROSOFT_CLIENT_ID ?? '',
-      clientSecret: process.env.MICROSOFT_CLIENT_SECRET ?? '',
-      tenantId: process.env.MICROSOFT_TENANT_ID ?? 'common',
-    }),
-    EmailProvider({
-      server: process.env.EMAIL_SERVER ?? '',
-      from: process.env.EMAIL_FROM ?? 'no-reply@example.com',
-    }),
-  ],
+
+
+
+const providers: NextAuthOptions['providers'] = [];
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  providers.push(GoogleProvider({
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  }));
+}
+
+
+
+
+
+
+
+const authOptions: NextAuthOptions = {
+  providers,
   callbacks: {
     async session({ session }) {
       // Store only email + display name (privacy constraint)
@@ -33,3 +35,4 @@ export const authOptions: NextAuthOptions = {
 
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
+export { authOptions };
