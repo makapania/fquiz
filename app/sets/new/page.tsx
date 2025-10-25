@@ -1,8 +1,8 @@
 "use client";
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function NewSetPage() {
+function NewSetForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialType = (searchParams.get('type') === 'quiz') ? 'quiz' : 'flashcards';
@@ -57,5 +57,13 @@ export default function NewSetPage() {
         </button>
       </form>
     </main>
+  );
+}
+
+export default function NewSetPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NewSetForm />
+    </Suspense>
   );
 }
