@@ -30,7 +30,7 @@ export default async function SetDetailPage({ params }: { params: { id: string }
             <ContentEditor id={params.id} type={set.type} />
           </div>
         )}
-        <AdminControls id={params.id} initial={{ is_published: !!set.is_published, passcode_required: !!set.passcode_required, passcode_expires_at: set.passcode_expires_at }} />
+        <AdminControls id={params.id} initial={{ is_published: !!set.is_published, passcode_required: !!set.passcode_required, passcode_expires_at: set.passcode_expires_at, type: set.type }} />
       </main>
     );
   } catch (e) {

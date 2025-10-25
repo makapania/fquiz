@@ -1,11 +1,13 @@
 "use client";
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function NewSetPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialType = (searchParams.get('type') === 'quiz') ? 'quiz' : 'flashcards';
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<'flashcards'|'quiz'>('flashcards');
+  const [type, setType] = useState<'flashcards'|'quiz'>(initialType);
   const [error, setError] = useState<string|undefined>();
   const [loading, setLoading] = useState(false);
 

@@ -9,6 +9,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     for (const k of allowed) {
       if (payload[k] !== undefined) update[k] = payload[k];
     }
+    // Allow updating type with validation
+    if (payload.type !== undefined) {
+      const t = String(payload.type);
+      if (!['flashcards','quiz'].includes(t)) {
+        return new NextResponse('Invalid type', { status: 400 });
+      }
+      update.type = t;
+    }
     if (Object.keys(update).length === 0) {
       return new NextResponse('No valid fields to update', { status: 400 });
     }

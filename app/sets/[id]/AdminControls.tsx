@@ -2,10 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function AdminControls({ id, initial }: { id: string; initial: { is_published: boolean; passcode_required: boolean; passcode_expires_at: string | null } }) {
+export default function AdminControls({ id, initial }: { id: string; initial: { is_published: boolean; passcode_required: boolean; passcode_expires_at: string | null; type: 'flashcards' | 'quiz' } }) {
   const [isPublished, setIsPublished] = useState(initial.is_published);
   const [pcRequired, setPcRequired] = useState(initial.passcode_required);
   const [expiresAt, setExpiresAt] = useState<string | null>(initial.passcode_expires_at);
+  const [type, setType] = useState<'flashcards'|'quiz'>(initial.type);
   const [passcode, setPasscode] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -16,9 +17,10 @@ export default function AdminControls({ id, initial }: { id: string; initial: { 
     setIsPublished(initial.is_published);
     setPcRequired(initial.passcode_required);
     setExpiresAt(initial.passcode_expires_at);
+    setType(initial.type);
     // do not reset status/passcode on revalidation
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initial.is_published, initial.passcode_required, initial.passcode_expires_at]);
+  }, [initial.is_published, initial.passcode_required, initial.passcode_expires_at, initial.type]);
 
   async function togglePublish() {
     setLoading(true);
@@ -32,6 +34,25 @@ export default function AdminControls({ id, initial }: { id: string; initial: { 
       if (!res.ok) throw new Error(await res.text());
       setIsPublished(!isPublished);
       setStatus(isPublished ? 'Unpublished' : 'Published');
+      router.refresh();
+    } catch (e: any) {
+      setStatus(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updateType() {
+    setLoading(true);
+    setStatus(null);
+    try {
+      const res = await fetch(`/api/sets/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setStatus(`Type updated to ${type}`);
       router.refresh();
     } catch (e: any) {
       setStatus(e.message);
@@ -87,6 +108,17 @@ export default function AdminControls({ id, initial }: { id: string; initial: { 
           {isPublished ? 'Unpublish' : 'Publish'}
         </button>
         <span className="text-sm text-muted">Status: {isPublished ? 'Published' : 'Draft'}</span>
+      </div>
+      <div className="space-y-2">
+        <label className="block text-sm">Type</label>
+        <div className="flex items-center gap-2">
+          <select className="rounded-md bg-surface p-2" value={type} onChange={(e) => setType(e.target.value as any)}>
+            <option value="flashcards">Flashcards</option>
+            <option value="quiz">Quiz</option>
+          </select>
+          <button className="rounded-md bg-surface2 px-3 py-2" onClick={updateType} disabled={loading}>Update</button>
+        </div>
+        <p className="text-xs text-muted">Switching type changes the editor mode for this set.</p>
       </div>
       <div className="space-y-2">
         <label className="block text-sm">Passcode</label>
