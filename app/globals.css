@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0c0f10;
+  --surface: #141a17;
+  --surface-2: #17201b;
+  --text: #eaf0ea;
+  --muted: #9fb2a7;
+  --accent: #1c7c54;
+  --card-surface: #ffffff;
+  --card-text: #111111;
+}
+
+html, body { height: 100%; }
+
+/* Map CSS variables to Tailwind via utility classes where useful */
+.bg-bg { background-color: var(--bg); }
+.bg-surface { background-color: var(--surface); }
+.bg-surface2 { background-color: var(--surface-2); }
+.text-text { color: var(--text); }
+.text-muted { color: var(--muted); }
+.bg-accent { background-color: var(--accent); }
+.bg-cardSurface { background-color: var(--card-surface); }
+.text-cardText { color: var(--card-text); }
+
+/* Reduced motion toggle: respect user setting */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
