@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { cookies } from 'next/headers';
 import { grantCookieName, verifyGrantValue } from '@/lib/passcodeGrant';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -16,11 +18,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (setError || !set) {
       return NextResponse.json({ error: 'Set not found' }, { status: 404 });
     }
+
+    const session = await getServerSession(authOptions);
+    const isSignedIn = !!session?.user?.email;
+
     const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
     if (isExpired) {
       return NextResponse.json({ error: 'Passcode expired' }, { status: 403 });
     }
-    if (set.passcode_required) {
+    if (set.passcode_required && !isSignedIn) {
       const cookieName = grantCookieName(params.id);
       const passCookie = cookies().get(cookieName);
       if (!passCookie) {

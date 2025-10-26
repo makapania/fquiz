@@ -33,7 +33,7 @@ export default async function SetDetailPage({ params }: { params: { id: string }
     // Check if passcode is expired at DB level
     const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
 
-    const needsPass = !!set.passcode_required && !hasValidPasscode;
+    const needsPass = !!set.passcode_required && !hasValidPasscode && !isSignedIn;
     return (
       <main className="space-y-4">
         <div className="flex items-center justify-between">

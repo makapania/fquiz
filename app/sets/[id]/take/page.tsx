@@ -60,19 +60,20 @@ export default function TakeQuizPage() {
     setError(null);
     try {
       // Load quiz set
-      const setRes = await fetch(`/api/sets/${id}`);
+      const setRes = await fetch(`/api/sets/${id}`, { credentials: 'same-origin' });
       if (!setRes.ok) throw new Error('Quiz not found');
       const setData = await setRes.json();
       setQuizSet(setData);
 
       // Load questions
-      const qRes = await fetch(`/api/sets/${id}/questions`);
+      const qRes = await fetch(`/api/sets/${id}/questions`, { credentials: 'same-origin' });
       if (!qRes.ok) {
         if (qRes.status === 403) {
           router.push(`/sets/${id}`);
           return;
         }
-        throw new Error('Failed to load questions');
+        const msg = await qRes.text();
+        throw new Error(msg || 'Failed to load questions');
       }
       const qData = await qRes.json();
 
@@ -87,6 +88,7 @@ export default function TakeQuizPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ set_id: id, is_guest: true }),
+        credentials: 'same-origin',
       });
 
       if (!attemptRes.ok) {
@@ -132,9 +134,13 @@ export default function TakeQuizPage() {
           chosen_index: chosenIndex,
           time_spent_ms: timeSpent,
         }),
+        credentials: 'same-origin',
       });
 
-      if (!res.ok) throw new Error('Failed to submit answer');
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || 'Failed to submit answer');
+      }
       const data = await res.json();
 
       // Store answer with correctness
@@ -190,9 +196,13 @@ export default function TakeQuizPage() {
     try {
       const res = await fetch(`/api/attempts/${attemptId}/submit`, {
         method: 'POST',
+        credentials: 'same-origin',
       });
 
-      if (!res.ok) throw new Error('Failed to submit quiz');
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || 'Failed to submit quiz');
+      }
       const data = await res.json();
 
       setResults(data.summary);

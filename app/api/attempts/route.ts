@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { cookies } from 'next/headers';
 import { grantCookieName, verifyGrantValue } from '@/lib/passcodeGrant';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { set_id, user_id, is_guest } = body;
-
+    const payload = await req.json();
+    const { set_id, is_guest, codename } = payload;
     if (!set_id) {
-      return NextResponse.json({ error: 'set_id required' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing set_id' }, { status: 400 });
     }
 
     const supabase = supabaseServer();
 
-    // Enforce passcode if required for this set
     const { data: set, error: setError } = await supabase
       .from('sets')
       .select('id, passcode_required, passcode_expires_at')
@@ -23,9 +24,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Set not found' }, { status: 404 });
     }
 
-    if (set.passcode_required) {
-      const name = grantCookieName(set_id);
-      const passCookie = req.cookies.get(name);
+    const session = await getServerSession(authOptions);
+    const isSignedIn = !!session?.user?.email;
+
+    const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
+    if (isExpired) {
+      return NextResponse.json({ error: 'Passcode expired' }, { status: 403 });
+    }
+    if (set.passcode_required && !isSignedIn) {
+      const cookieName = grantCookieName(set_id);
+      const passCookie = cookies().get(cookieName);
       if (!passCookie) {
         return NextResponse.json({ error: 'Passcode required' }, { status: 403 });
       }
@@ -35,26 +43,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create attempt record
-    const attemptData: any = {
-      set_id,
-      is_guest: is_guest ?? false,
-      started_at: new Date().toISOString(),
-    };
-
-    if (user_id) {
-      attemptData.user_id = user_id;
-    }
-
     const { data: attempt, error } = await supabase
       .from('attempts')
-      .insert(attemptData)
-      .select('id, set_id, started_at')
+      .insert({ set_id, is_guest: !!is_guest, codename: codename ?? null })
+      .select('id')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      return NextResponse.json({ error: error.message || 'Failed to create attempt' }, { status: 500 });
+    }
 
-    return NextResponse.json({ attempt });
+    return NextResponse.json({ id: attempt.id });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || 'Server error' }, { status: 500 });
   }

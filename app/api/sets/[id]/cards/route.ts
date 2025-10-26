@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { cookies } from 'next/headers';
 import { grantCookieName, verifyGrantValue } from '@/lib/passcodeGrant';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
     const supabase = supabaseServer();
 
-    // Enforce passcode for accessing cards
     const { data: set, error: setError } = await supabase
       .from('sets')
       .select('passcode_required, passcode_expires_at')
@@ -16,11 +17,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (setError || !set) {
       return NextResponse.json({ error: 'Set not found' }, { status: 404 });
     }
+
+    const session = await getServerSession(authOptions);
+    const isSignedIn = !!session?.user?.email;
+
     const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
     if (isExpired) {
       return NextResponse.json({ error: 'Passcode expired' }, { status: 403 });
     }
-    if (set.passcode_required) {
+    if (set.passcode_required && !isSignedIn) {
       const cookieName = grantCookieName(params.id);
       const passCookie = cookies().get(cookieName);
       if (!passCookie) {
@@ -34,7 +39,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     const { data, error } = await supabase
       .from('cards')
-      .select('id,kind,prompt,answer,explanation')
+      .select('id,front,back')
       .eq('set_id', params.id)
       .order('id', { ascending: true });
     if (error) throw error;
