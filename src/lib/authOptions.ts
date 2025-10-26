@@ -25,8 +25,6 @@ export const authOptions: NextAuthOptions = {
   },
   // Enable verbose logging in development or when NEXTAUTH_DEBUG=true
   debug: process.env.NODE_ENV === 'development' || process.env.NEXTAUTH_DEBUG === 'true',
-  // Trust proxy headers (Vercel / reverse proxies) for correct callback handling
-  trustHost: true,
   // Prevent OAuthAccountNotLinked by allowing linking accounts with same email
   allowDangerousEmailAccountLinking: true,
   callbacks: {
