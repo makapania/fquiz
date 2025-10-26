@@ -8,7 +8,7 @@ import { authOptions } from '@/lib/authOptions';
 export async function POST(req: Request) {
   try {
     const payload = await req.json();
-    const { set_id, is_guest, codename } = payload;
+    const { set_id, is_guest } = payload;
     if (!set_id) {
       return NextResponse.json({ error: 'Missing set_id' }, { status: 400 });
     }
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 
     const { data: attempt, error } = await supabase
       .from('attempts')
-      .insert({ set_id, is_guest: !!is_guest, codename: codename ?? null })
+      .insert({ set_id, is_guest: !!is_guest })
       .select('id')
       .single();
 
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message || 'Failed to create attempt' }, { status: 500 });
     }
 
-    return NextResponse.json({ id: attempt.id });
+    return NextResponse.json({ attempt: { id: attempt.id } });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || 'Server error' }, { status: 500 });
   }

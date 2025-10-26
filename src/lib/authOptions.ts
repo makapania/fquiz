@@ -17,6 +17,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   }));
 }
 
+// Override NEXTAUTH_URL in development to use port 3000
+if (process.env.NODE_ENV === 'development') {
+  process.env.NEXTAUTH_URL = 'http://localhost:3000';
+}
+
 export const authOptions: NextAuthOptions = {
   providers,
   // Use JWT sessions (no database required)
