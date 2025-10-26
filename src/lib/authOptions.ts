@@ -19,7 +19,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 export const authOptions: NextAuthOptions = {
   providers,
-  debug: process.env.NODE_ENV === 'development',
+  // Enable verbose logging in development or when NEXTAUTH_DEBUG=true
+  debug: process.env.NODE_ENV === 'development' || process.env.NEXTAUTH_DEBUG === 'true',
+  // Trust proxy headers (Vercel / reverse proxies) for correct callback handling
+  trustHost: true,
+  // Prevent OAuthAccountNotLinked by allowing linking accounts with same email
+  allowDangerousEmailAccountLinking: true,
   callbacks: {
     async signIn({ user, account, profile }) {
       console.log('[NextAuth] signIn callback triggered');
