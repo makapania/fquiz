@@ -19,6 +19,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 export const authOptions: NextAuthOptions = {
   providers,
+  // Use JWT sessions (no database required)
+  session: {
+    strategy: 'jwt',
+  },
   // Enable verbose logging in development or when NEXTAUTH_DEBUG=true
   debug: process.env.NODE_ENV === 'development' || process.env.NEXTAUTH_DEBUG === 'true',
   // Trust proxy headers (Vercel / reverse proxies) for correct callback handling
