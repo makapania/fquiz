@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { grantCookieName, verifyGrantValue } from '@/lib/passcodeGrant';
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,13 +24,14 @@ export async function POST(req: NextRequest) {
     }
 
     if (set.passcode_required) {
-      const passCookie = req.cookies.get(`set_pass_ok_${set_id}`);
-      const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
-      if (isExpired) {
-        return NextResponse.json({ error: 'Passcode expired' }, { status: 403 });
-      }
+      const name = grantCookieName(set_id);
+      const passCookie = req.cookies.get(name);
       if (!passCookie) {
         return NextResponse.json({ error: 'Passcode required' }, { status: 403 });
+      }
+      const v = verifyGrantValue(passCookie.value, set_id);
+      if (!v.ok) {
+        return NextResponse.json({ error: v.expired ? 'Passcode expired' : 'Invalid passcode grant' }, { status: 403 });
       }
     }
 

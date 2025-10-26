@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import bcrypt from 'bcryptjs';
+import { createGrantValue, grantCookieName } from '@/lib/passcodeGrant';
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -26,7 +27,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!ok) return new NextResponse('Invalid passcode', { status: 401 });
 
     const res = NextResponse.redirect(new URL(`/sets/${params.id}`, req.url));
-    res.cookies.set(`set_pass_ok_${params.id}`, '1', { httpOnly: true, path: '/', maxAge: 60 * 60 * 24 });
+    const cookieName = grantCookieName(params.id);
+    const value = createGrantValue(params.id, set.passcode_expires_at || null);
+    res.cookies.set(cookieName, value, {
+      httpOnly: true,
+      path: '/',
+      maxAge: 60 * 60 * 24, // 1 day client hint; actual expiry enforced by signature
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
     return res;
   } catch (e: any) {
     return new NextResponse(e.message || 'Server error', { status: 500 });

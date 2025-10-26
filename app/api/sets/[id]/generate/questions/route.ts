@@ -8,9 +8,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   try {
     const session = await getServerSession(authOptions);
     const email = session?.user?.email || '';
-    const devPass = req.headers.get('x-dev-password') || '';
-    const isDev = email === 'matt.sponheimer@gmail.com' && devPass === 'makapansgat';
-    if (!isDev) return NextResponse.json({ error: 'Developer-only feature' }, { status: 403 });
+    const allowed = (process.env.DEV_ALLOWED_EMAILS || 'matt.sponheimer@gmail.com')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (!email || !allowed.includes(email)) {
+      return NextResponse.json({ error: 'Developer-only feature' }, { status: 403 });
+    }
 
     const body = await req.json();
     const source = String(body.source || 'prompt'); // 'prompt' | 'upload'

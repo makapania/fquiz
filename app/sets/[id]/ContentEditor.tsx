@@ -17,8 +17,7 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
   const [authLatencyMs, setAuthLatencyMs] = useState<number | null>(null);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [authProviders, setAuthProviders] = useState<Record<string, { id: string; name: string }> | null>(null);
-  const [devPassword, setDevPassword] = useState('');
-  const isDeveloper = (session?.user?.email === 'matt.sponheimer@gmail.com' && devPassword === 'makapansgat');
+  const isSignedIn = !!session?.user?.email;
   const [aiSource, setAiSource] = useState<'prompt' | 'upload'>('prompt');
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiProvider, setAiProvider] = useState<'basic' | 'openai' | 'anthropic' | 'zai' | 'openrouter' | 'google'>('basic');
@@ -315,7 +314,7 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
 
       const res = await fetch(`/api/sets/${id}/generate/questions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-dev-password': devPassword },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (!res.ok) {
@@ -363,7 +362,7 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
 
       const res = await fetch(`/api/sets/${id}/generate/cards`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-dev-password': devPassword },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (!res.ok) {
@@ -502,7 +501,7 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
                   } catch {}
                 }} placeholder={aiProvider==='openai' ? 'OpenAI API key' : aiProvider==='anthropic' ? 'Anthropic API key' : aiProvider==='zai' ? 'Z.ai API key' : aiProvider==='openrouter' ? 'OpenRouter API key' : aiProvider==='google' ? 'Google Generative AI API key' : 'leave blank to use env key'} />
               </div>
-              <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateFlashcardsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile) || !isDeveloper}>
+              <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateFlashcardsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile) || !isSignedIn}>
                 {loading ? 'Generating...' : 'Generate 10 flashcards'}
               </button>
             </div>
@@ -543,19 +542,7 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
                     <input type="checkbox" checked={rememberKeys} onChange={(e) => setRememberKeys(e.target.checked)} />
                     <span>Remember my AI keys on this device</span>
                   </label>
-                  {session?.user?.email === 'matt.sponheimer@gmail.com' && (
-                    <div className="inline-flex items-center gap-2">
-                      <label className="text-sm">Developer password</label>
-                      <input
-                        type="password"
-                        className="rounded-md bg-surface px-2 py-1 border border-muted"
-                        value={devPassword}
-                        onChange={(e) => setDevPassword(e.target.value)}
-                        placeholder="Enter to enable developer features"
-                      />
-                      <span className="text-xs text-muted">{isDeveloper ? 'Developer mode enabled' : 'Developer mode locked'}</span>
-                    </div>
-                  )}
+                  {/* Developer-only UI removed; server enforces access */}
                   <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => signOut()}>Sign out</button>
                 </>
               )}
@@ -718,7 +705,7 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
                 } catch {}
               }} placeholder={aiProvider==='openai' ? 'OpenAI API key' : aiProvider==='anthropic' ? 'Anthropic API key' : aiProvider==='zai' ? 'Z.ai API key' : aiProvider==='openrouter' ? 'OpenRouter API key' : aiProvider==='google' ? 'Google Generative AI API key' : 'leave blank to use env key'} />
             </div>
-            <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateQuestionsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile) || !isDeveloper}>
+            <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateQuestionsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile) || !isSignedIn}>
               {loading ? 'Generating...' : 'Generate 5 questions'}
             </button>
           </div>
@@ -759,19 +746,7 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
                   <input type="checkbox" checked={rememberKeys} onChange={(e) => setRememberKeys(e.target.checked)} />
                   <span>Remember my AI keys on this device</span>
                 </label>
-                {session?.user?.email === 'matt.sponheimer@gmail.com' && (
-                  <div className="inline-flex items-center gap-2">
-                    <label className="text-sm">Developer password</label>
-                    <input
-                      type="password"
-                      className="rounded-md bg-surface px-2 py-1 border border-muted"
-                      value={devPassword}
-                      onChange={(e) => setDevPassword(e.target.value)}
-                      placeholder="Enter to enable developer features"
-                    />
-                    <span className="text-xs text-muted">{isDeveloper ? 'Developer mode enabled' : 'Developer mode locked'}</span>
-                  </div>
-                )}
+                {/*  removed; server authorizes generation by email allowlist */}
                 <button className="rounded-md bg-surface2 px-3 py-2" onClick={() => signOut()}>Sign out</button>
               </>
             )}
