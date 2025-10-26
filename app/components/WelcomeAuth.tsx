@@ -64,7 +64,20 @@ export default function WelcomeAuth() {
             <p className="text-sm text-muted">Signed in as</p>
             <p className="font-medium">{session.user?.email || session.user?.name || 'User'}</p>
           </div>
-          <button className="rounded-md bg-surface px-3 py-2" onClick={() => signOut()}>Sign out</button>
+          <button
+            className="rounded-md bg-surface px-3 py-2"
+            onClick={async () => {
+              // Clear all passcode grant cookies via server API before signing out
+              try {
+                await fetch('/api/auth/clear-passcodes', { method: 'POST' });
+              } catch (e) {
+                console.error('Failed to clear passcode cookies:', e);
+              }
+              signOut();
+            }}
+          >
+            Sign out
+          </button>
         </div>
       ) : isGuest ? (
         <div className="flex items-center justify-between">

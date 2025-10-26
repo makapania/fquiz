@@ -17,8 +17,32 @@ export default async function SetDetailPage({ params }: { params: { id: string }
     const session = await getServerSession(authOptions);
     const isSignedIn = !!session?.user?.email;
     const publicEditable = !!(set.options && set.options.public_editable);
-    const canEdit = isSignedIn || publicEditable; // later: refine with ownership/roles
-    const canAdmin = isSignedIn; // later: restrict to owner or instructor role
+
+    // Check if the signed-in user is the owner of this set
+    let isOwner = false;
+    if (isSignedIn && set.created_by) {
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', session.user.email)
+        .single();
+
+      console.log('[OWNER CHECK]', {
+        sessionEmail: session.user.email,
+        userFound: !!user,
+        userId: user?.id,
+        setCreatedBy: set.created_by,
+        match: user?.id === set.created_by,
+        userError: userError?.message
+      });
+
+      isOwner = user?.id === set.created_by;
+    } else {
+      console.log('[OWNER CHECK SKIPPED]', { isSignedIn, hasCreatedBy: !!set.created_by });
+    }
+
+    const canEdit = isSignedIn || publicEditable; // Signed-in users can edit
+    const canAdmin = isSignedIn; // Signed-in users can access admin controls
 
     // Check passcode grant cookie - must verify signature, not just existence
     const cookieName = grantCookieName(params.id);
@@ -33,7 +57,8 @@ export default async function SetDetailPage({ params }: { params: { id: string }
     // Check if passcode is expired at DB level
     const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
 
-    const needsPass = !!set.passcode_required && !hasValidPasscode && !isSignedIn;
+    // Use owner bypass if we have owner info, otherwise allow signed-in users to bypass
+    const needsPass = !!set.passcode_required && !hasValidPasscode && !isOwner && !isSignedIn;
     return (
       <main className="space-y-4">
         <div className="flex items-center justify-between">

@@ -1,5 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
+import { supabaseServer } from '@/lib/supabaseClient';
 
 const providers: NextAuthOptions['providers'] = [];
 
@@ -37,6 +38,27 @@ export const authOptions: NextAuthOptions = {
       console.log('[NextAuth] signIn callback triggered');
       console.log('[NextAuth] User:', user.email);
       console.log('[NextAuth] Provider:', account?.provider);
+
+      // Ensure user exists in our database
+      if (user.email) {
+        const supabase = supabaseServer();
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+
+        if (!existingUser) {
+          console.log('[NextAuth] Creating new user in database:', user.email);
+          await supabase.from('users').insert({
+            email: user.email,
+            name: user.name || null,
+          });
+        } else {
+          console.log('[NextAuth] User already exists in database');
+        }
+      }
+
       return true;
     },
     async redirect({ url, baseUrl }) {
