@@ -1,14 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run dev:*)",
-      "Bash(npm install:*)",
-      "Bash(npx tsc:*)",
-      "Bash(netstat:*)",
-      "Bash(findstr:*)",
-      "Bash(taskkill:*)",
-      "Bash(curl:*)",
-      "Bash(git add:*)"
+      "Bash(of 'useSession()' as it is undefined\" error in production.\n\nChanges:\n- Create app/components/Providers.tsx with SessionProvider wrapper\n- Update app/layout.tsx to wrap entire app with Providers component\n\nThis fixes the critical issue where NextAuth wasn''t initialized, causing:\n- useSession() to return undefined\n- Authentication to fail completely in production\n- RLS errors due to missing user context\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

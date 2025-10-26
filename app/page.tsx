@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabaseClient';
+import WelcomeWithSession from './components/WelcomeWithSession';
 
 type SetRow = {
   id: string;
@@ -24,9 +25,11 @@ export default async function HomePage() {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-lg bg-surface p-4">
+      <section className="rounded-lg bg-surface p-4 space-y-3">
         <h2 className="text-xl font-medium">Welcome</h2>
         <p className="text-muted">Study flashcards or take quizzes. Sign in or join as a guest.</p>
+        {/* Sign-in on welcome page */}
+        <WelcomeWithSession />
       </section>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 items-stretch">

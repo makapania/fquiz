@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSoundEffects } from '@/lib/soundEffects';
 
 type Question = {
   id: string;
@@ -31,6 +32,7 @@ export default function TakeQuizPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { playClick, playCorrect, playWrong } = useSoundEffects();
 
   const [quizSet, setQuizSet] = useState<QuizSet | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -65,7 +67,13 @@ export default function TakeQuizPage() {
 
       // Load questions
       const qRes = await fetch(`/api/sets/${id}/questions`);
-      if (!qRes.ok) throw new Error('Failed to load questions');
+      if (!qRes.ok) {
+        if (qRes.status === 403) {
+          router.push(`/sets/${id}`);
+          return;
+        }
+        throw new Error('Failed to load questions');
+      }
       const qData = await qRes.json();
 
       if (!qData.items || qData.items.length === 0) {
@@ -81,10 +89,16 @@ export default function TakeQuizPage() {
         body: JSON.stringify({ set_id: id, is_guest: true }),
       });
 
-      if (!attemptRes.ok) throw new Error('Failed to start quiz');
+      if (!attemptRes.ok) {
+        const message = await attemptRes.text();
+        throw new Error(message || 'Failed to start quiz');
+      }
       const attemptData = await attemptRes.json();
       setAttemptId(attemptData.attempt.id);
       setQuestionStartTime(Date.now());
+      
+      // Play click sound when first question loads
+      setTimeout(() => playClick(), 100);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -132,6 +146,17 @@ export default function TakeQuizPage() {
       };
 
       setAnswers([...answers, answer]);
+      
+      // Play sound effect based on correctness (only in immediate mode)
+      if (revealMode === 'immediate') {
+        setTimeout(() => {
+          if (data.correct) {
+            playCorrect();
+          } else {
+            playWrong();
+          }
+        }, 100);
+      }
     } catch (e: any) {
       setError(e.message);
     }
@@ -149,6 +174,9 @@ export default function TakeQuizPage() {
       setSelectedChoice(null);
       setIsAnswered(false);
       setQuestionStartTime(Date.now());
+      
+      // Play click sound for new question
+      setTimeout(() => playClick(), 100);
     } else {
       // Last question - finish quiz
       await finishQuiz();
@@ -169,6 +197,16 @@ export default function TakeQuizPage() {
 
       setResults(data.summary);
       setShowResults(true);
+      
+      // Play sound effect based on overall performance
+      setTimeout(() => {
+        const percentage = data.summary?.percentage || 0;
+        if (percentage >= 70) {
+          playCorrect(); // Good performance
+        } else {
+          playWrong(); // Needs improvement
+        }
+      }, 500);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -230,6 +268,56 @@ export default function TakeQuizPage() {
             <p className="text-sm text-muted">Your Score</p>
             <p className="text-5xl font-bold text-accent">{results?.percentage || 0}%</p>
           </div>
+
+          {revealMode === 'deferred' && (
+            <div className="mt-8 space-y-6">
+              <h3 className="text-xl font-semibold">Review Answers</h3>
+              {questions.map((q) => {
+                const ans = answers.find(a => a.question_id === q.id);
+                const chosen = ans?.chosen_index;
+                const correctIdx = q.correct_index;
+                return (
+                  <div key={q.id} className="rounded-lg bg-surface2 p-4">
+                    <p className="font-medium">{q.stem}</p>
+                    <div className="mt-4 space-y-2">
+                      {q.choices.map((choice, i) => {
+                        const isChosen = chosen === i;
+                        const isCorrect = correctIdx === i;
+                        let bg = 'bg-surface';
+                        let border = 'border-surface2';
+                        let icon = '';
+                        if (isCorrect) {
+                          bg = 'bg-green-900/30';
+                          border = 'border-green-500';
+                          icon = '✓';
+                        }
+                        if (isChosen && !isCorrect) {
+                          bg = 'bg-red-900/30';
+                          border = 'border-red-500';
+                          icon = '✗';
+                        }
+                        return (
+                          <div key={i} className={`rounded-md border ${border} ${bg} p-3 flex items-center gap-3`}>
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-surface">
+                              {String.fromCharCode(65 + i)}
+                            </div>
+                            <p className="flex-1">{choice}</p>
+                            {icon && <span className={isCorrect ? 'text-green-400' : 'text-red-400'}>{icon}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {q.explanation && (
+                      <div className="mt-3 rounded-md bg-surface p-3">
+                        <p className="text-sm font-medium text-accent">Explanation</p>
+                        <p className="text-sm text-muted mt-1">{q.explanation}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="mt-6 flex gap-3">
             <button

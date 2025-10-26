@@ -49,7 +49,13 @@ export default function StudyFlashcardsPage() {
 
       // Load cards
       const cardsRes = await fetch(`/api/sets/${id}/cards`);
-      if (!cardsRes.ok) throw new Error('Failed to load flashcards');
+      if (!cardsRes.ok) {
+        if (cardsRes.status === 403) {
+          router.push(`/sets/${id}`);
+          return;
+        }
+        throw new Error('Failed to load flashcards');
+      }
       const cardsData = await cardsRes.json();
 
       if (!cardsData.items || cardsData.items.length === 0) {

@@ -26,7 +26,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!ok) return new NextResponse('Invalid passcode', { status: 401 });
 
     const res = NextResponse.redirect(new URL(`/sets/${params.id}`, req.url));
-    res.cookies.set(`set_pass_ok_${params.id}`, '1', { httpOnly: true, path: `/sets/${params.id}`, maxAge: 60 * 60 * 24 });
+    res.cookies.set(`set_pass_ok_${params.id}`, '1', { httpOnly: true, path: '/', maxAge: 60 * 60 * 24 });
     return res;
   } catch (e: any) {
     return new NextResponse(e.message || 'Server error', { status: 500 });

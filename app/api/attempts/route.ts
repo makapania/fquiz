@@ -12,6 +12,27 @@ export async function POST(req: NextRequest) {
 
     const supabase = supabaseServer();
 
+    // Enforce passcode if required for this set
+    const { data: set, error: setError } = await supabase
+      .from('sets')
+      .select('id, passcode_required, passcode_expires_at')
+      .eq('id', set_id)
+      .single();
+    if (setError || !set) {
+      return NextResponse.json({ error: 'Set not found' }, { status: 404 });
+    }
+
+    if (set.passcode_required) {
+      const passCookie = req.cookies.get(`set_pass_ok_${set_id}`);
+      const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
+      if (isExpired) {
+        return NextResponse.json({ error: 'Passcode expired' }, { status: 403 });
+      }
+      if (!passCookie) {
+        return NextResponse.json({ error: 'Passcode required' }, { status: 403 });
+      }
+    }
+
     // Create attempt record
     const attemptData: any = {
       set_id,

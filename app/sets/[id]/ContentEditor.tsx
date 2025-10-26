@@ -49,10 +49,25 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
     try {
       if (type === 'flashcards') {
         const res = await fetch(`/api/sets/${id}/cards`);
+        if (!res.ok) {
+          const msg = await res
+            .json()
+            .then((d) => (typeof d === 'object' && d && 'error' in d ? (d as any).error : JSON.stringify(d)))
+            .catch(async () => await res.text());
+          throw new Error(msg || `${res.status} ${res.statusText}`);
+        }
         const data = await res.json();
         setCards(data.items || []);
       } else {
         const res = await fetch(`/api/sets/${id}/questions`);
+        if (!res.ok) {
+          const msg = await res
+            .json()
+            .then((d) => (typeof d === 'object' && d && 'error' in d ? (d as any).error : JSON.stringify(d)))
+            .catch(async () => await res.text());
+        
+          throw new Error(msg || `${res.status} ${res.statusText}`);
+        }
         const data = await res.json();
         setQuestions(data.items || []);
       }

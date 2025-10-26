@@ -2,7 +2,10 @@ import { cookies } from 'next/headers';
 import { supabaseServer } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import AdminControls from './AdminControls';
-import ContentEditor from './ContentEditor';
+import EditorWithSession from './EditorWithSession';
+import PasscodeForm from './PasscodeForm';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
 
 export default async function SetDetailPage({ params }: { params: { id: string } }) {
   try {
@@ -10,8 +13,15 @@ export default async function SetDetailPage({ params }: { params: { id: string }
     const { data: set, error } = await supabase.from('sets').select('*').eq('id', params.id).single();
     if (error || !set) throw new Error('Failed to load set');
 
+    const session = await getServerSession(authOptions);
+    const isSignedIn = !!session?.user?.email;
+    const publicEditable = !!(set.options && set.options.public_editable);
+    const canEdit = isSignedIn || publicEditable; // later: refine with ownership/roles
+    const canAdmin = isSignedIn; // later: restrict to owner or instructor role
+
     const passCookie = cookies().get(`set_pass_ok_${params.id}`);
-    const needsPass = !!set.passcode_required && (!passCookie);
+    const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
+    const needsPass = !!set.passcode_required && (!passCookie || isExpired);
     return (
       <main className="space-y-4">
         <div className="flex items-center justify-between">
@@ -21,7 +31,14 @@ export default async function SetDetailPage({ params }: { params: { id: string }
         <p className="text-muted">Type: {set.type}</p>
         {set.description && <p>{set.description}</p>}
         {needsPass ? (
-          <PasscodeForm id={params.id} />
+          isExpired ? (
+            <div className="rounded-md bg-red-900/30 p-4">
+              <p className="text-red-400 font-semibold">Passcode expired</p>
+              <p className="text-sm text-muted">Contact the creator to update access or disable passcode.</p>
+            </div>
+          ) : (
+            <PasscodeForm id={params.id} />
+          )
         ) : (
           <div className="space-y-4">
             {set.type === 'quiz' && set.is_published && (
@@ -56,10 +73,18 @@ export default async function SetDetailPage({ params }: { params: { id: string }
                 </div>
               </div>
             )}
-            <ContentEditor id={params.id} type={set.type} />
+            {canEdit ? (
+              <EditorWithSession id={params.id} type={set.type} />
+            ) : (
+              <div className="rounded-md bg-surface2 p-4">
+                <p className="text-sm text-muted">Sign in to edit this set{publicEditable ? ' • Public editing is currently enabled' : ''}.</p>
+              </div>
+            )}
           </div>
         )}
-        <AdminControls id={params.id} initial={{ is_published: !!set.is_published, passcode_required: !!set.passcode_required, passcode_expires_at: set.passcode_expires_at, type: set.type }} />
+        {canAdmin && (
+          <AdminControls id={params.id} initial={{ is_published: !!set.is_published, passcode_required: !!set.passcode_required, passcode_expires_at: set.passcode_expires_at, type: set.type, options: set.options || {} }} />
+        )}
       </main>
     );
   } catch (e) {
@@ -72,14 +97,4 @@ export default async function SetDetailPage({ params }: { params: { id: string }
   }
 }
 
-function PasscodeForm({ id }: { id: string }) {
-  return (
-    <form action={`/api/sets/${id}/passcode`} method="POST" className="space-y-3">
-      <div>
-        <label className="block text-sm text-muted">Enter passcode</label>
-        <input name="passcode" type="password" className="mt-1 w-full rounded-md border border-surface2 bg-surface p-2 text-text" required />
-      </div>
-      <button className="rounded-md bg-accent px-4 py-2 text-white">Submit</button>
-    </form>
-  );
-}
+// PasscodeForm moved to a client component at ./PasscodeForm to support inline error handling and logged-out submissions.
