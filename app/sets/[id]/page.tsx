@@ -6,6 +6,7 @@ import EditorWithSession from './EditorWithSession';
 import PasscodeForm from './PasscodeForm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
+import { grantCookieName, verifyGrantValue } from '@/lib/passcodeGrant';
 
 export default async function SetDetailPage({ params }: { params: { id: string } }) {
   try {
@@ -19,9 +20,20 @@ export default async function SetDetailPage({ params }: { params: { id: string }
     const canEdit = isSignedIn || publicEditable; // later: refine with ownership/roles
     const canAdmin = isSignedIn; // later: restrict to owner or instructor role
 
-    const passCookie = cookies().get(`set_pass_ok_${params.id}`);
+    // Check passcode grant cookie - must verify signature, not just existence
+    const cookieName = grantCookieName(params.id);
+    const passCookie = cookies().get(cookieName);
+
+    let hasValidPasscode = false;
+    if (passCookie) {
+      const verification = verifyGrantValue(passCookie.value, params.id);
+      hasValidPasscode = verification.ok && !verification.expired;
+    }
+
+    // Check if passcode is expired at DB level
     const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
-    const needsPass = !!set.passcode_required && (!passCookie || isExpired);
+
+    const needsPass = !!set.passcode_required && !hasValidPasscode;
     return (
       <main className="space-y-4">
         <div className="flex items-center justify-between">
