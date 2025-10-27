@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 type Card = {
   id: string;
@@ -366,25 +367,45 @@ export default function StudyFlashcardsPage() {
       </div>
 
       {currentIndex === cards.length - 1 && knowCount + dontKnowCount === cards.length && (
-        <div className="rounded-lg bg-accent/20 p-6 text-center">
-          <h3 className="text-xl font-semibold">Study Session Complete!</h3>
-          <p className="mt-2 text-muted">
-            You reviewed all {cards.length} cards. Great work!
-          </p>
-          <div className="mt-4 flex justify-center gap-3">
-            <button
-              onClick={resetProgress}
-              className="rounded-md bg-accent px-6 py-2 text-white"
-            >
-              Study Again
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className="rounded-md bg-surface2 px-6 py-2 text-text"
-            >
-              Review Grid
-            </button>
+        <div className="space-y-4">
+          <div className="rounded-lg bg-accent/20 p-6 text-center">
+            <h3 className="text-xl font-semibold">Study Session Complete!</h3>
+            <p className="mt-2 text-muted">
+              You reviewed all {cards.length} cards. Great work!
+            </p>
+            <div className="mt-4 flex justify-center gap-3">
+              <button
+                onClick={resetProgress}
+                className="rounded-md bg-accent px-6 py-2 text-white"
+              >
+                Study Again
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className="rounded-md bg-surface2 px-6 py-2 text-text"
+              >
+                Review Grid
+              </button>
+            </div>
           </div>
+          
+          {knowCount === cards.length && (
+            <div className="rounded-lg bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-6 text-center border border-purple-500/30">
+              <div className="flex items-center justify-center gap-4">
+                <Image
+                  src="/funkyhom.png"
+                  alt="Funkyhom celebrating"
+                  width={80}
+                  height={80}
+                  className="rounded-full"
+                />
+                <div>
+                  <h3 className="text-2xl font-bold text-purple-300">Perfect Study!</h3>
+                  <p className="text-lg text-purple-200">You knew all the cards - too school for cool! 🎉</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </main>

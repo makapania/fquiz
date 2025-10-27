@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSoundEffects } from '@/lib/soundEffects';
+import Image from 'next/image';
 
 type Question = {
   id: string;
@@ -278,6 +279,24 @@ export default function TakeQuizPage() {
             <p className="text-sm text-muted">Your Score</p>
             <p className="text-5xl font-bold text-accent">{results?.percentage || 0}%</p>
           </div>
+
+          {results?.percentage === 100 && (
+            <div className="mt-6 rounded-lg bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-6 text-center border border-purple-500/30">
+              <div className="flex items-center justify-center gap-4">
+                <Image
+                  src="/funkyhom.png"
+                  alt="Funkyhom celebrating"
+                  width={80}
+                  height={80}
+                  className="rounded-full"
+                />
+                <div>
+                  <h3 className="text-2xl font-bold text-purple-300">Perfect Score!</h3>
+                  <p className="text-lg text-purple-200">You're too school for cool! 🎉</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {revealMode === 'deferred' && (
             <div className="mt-8 space-y-6">
