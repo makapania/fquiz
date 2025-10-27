@@ -7,6 +7,9 @@ import PasscodeForm from './PasscodeForm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import { grantCookieName, verifyGrantValue } from '@/lib/passcodeGrant';
+import { unstable_noStore as noStore } from 'next/cache';
+
+noStore();
 
 export default async function SetDetailPage({ params }: { params: { id: string } }) {
   try {
@@ -78,7 +81,7 @@ export default async function SetDetailPage({ params }: { params: { id: string }
           )
         ) : (
           <div className="space-y-4">
-            {set.type === 'quiz' && set.is_published && (
+            {set.type === 'quiz' && (set.is_published || isOwner) && (
               <div className="rounded-md bg-accent/20 p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -94,7 +97,7 @@ export default async function SetDetailPage({ params }: { params: { id: string }
                 </div>
               </div>
             )}
-            {set.type === 'flashcards' && set.is_published && (
+            {set.type === 'flashcards' && (set.is_published || isOwner) && (
               <div className="rounded-md bg-accent/20 p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -120,7 +123,7 @@ export default async function SetDetailPage({ params }: { params: { id: string }
           </div>
         )}
         {canAdmin && (
-          <AdminControls id={params.id} initial={{ is_published: !!set.is_published, passcode_required: !!set.passcode_required, passcode_expires_at: set.passcode_expires_at, type: set.type, options: set.options || {} }} />
+          <AdminControls id={params.id} initial={{ is_published: !!set.is_published, passcode_required: !!set.passcode_required, passcode_expires_at: set.passcode_expires_at, type: set.type, options: set.options || {} }} isOwner={isOwner || (!set.created_by && isSignedIn)} />
         )}
       </main>
     );

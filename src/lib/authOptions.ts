@@ -52,7 +52,7 @@ export const authOptions: NextAuthOptions = {
           console.log('[NextAuth] Creating new user in database:', user.email);
           await supabase.from('users').insert({
             email: user.email,
-            name: user.name || null,
+            display_name: user.name || null,
           });
         } else {
           console.log('[NextAuth] User already exists in database');

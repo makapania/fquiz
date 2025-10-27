@@ -1,26 +1,33 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabaseClient';
 import WelcomeWithSession from './components/WelcomeWithSession';
+import { unstable_noStore as noStore } from 'next/cache';
+import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Disable Next.js data cache for this page to ensure fresh results
+noStore();
 
 type SetRow = {
   id: string;
   title: string;
   type: 'flashcards' | 'quiz';
   is_published: boolean;
-  cards?: Array<{ count: number }>;
-  questions?: Array<{ count: number }>;
 };
 
 export default async function HomePage() {
+  // Force fresh data by accessing headers (makes this truly dynamic)
+  const headersList = headers();
+  
   const supabase = supabaseServer();
   let recent: SetRow[] = [];
   try {
     const { data } = await supabase
       .from('sets')
-      .select('id,title,type,is_published,cards(count),questions(count)')
-      .order('updated_at', { ascending: false })
+      .select('id,title,type,is_published')
+      .order('created_at', { ascending: false })
       .limit(5);
     recent = (data as SetRow[]) ?? [];
   } catch {}

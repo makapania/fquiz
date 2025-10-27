@@ -1,34 +1,72 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { unstable_noStore as noStore } from 'next/cache';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
 
 export const dynamic = 'force-dynamic';
+
+// Disable Next.js data cache for this page to ensure fresh results
+noStore();
 
 type SetRow = {
   id: string;
   title: string;
   type: 'flashcards' | 'quiz';
   is_published: boolean;
-  cards?: Array<{ count: number }>;
-  questions?: Array<{ count: number }>;
 };
 
 export default async function SetsPage() {
+  const session = await getServerSession(authOptions);
+  const isSignedIn = !!session?.user?.email;
+
   let sets: SetRow[] = [];
   try {
     const supabase = supabaseServer();
     const { data, error } = await supabase
       .from('sets')
-      .select('id,title,type,is_published,cards(count),questions(count)')
-      .order('updated_at', { ascending: false });
+      .select('id,title,type,is_published,created_at,updated_at')
+      .order('created_at', { ascending: false });
     if (error) throw error;
     sets = (data as SetRow[]) ?? [];
+
+    // Compute counts explicitly to avoid nested aggregation quirks
+    const counts = await Promise.all(
+      sets.map(async (s) => {
+        const [{ count: cardCount }, { count: questionCount }] = await Promise.all([
+          supabase
+            .from('cards')
+            .select('id', { head: true, count: 'exact' })
+            .eq('set_id', s.id),
+          supabase
+            .from('questions')
+            .select('id', { head: true, count: 'exact' })
+            .eq('set_id', s.id),
+        ]);
+        return { id: s.id, cardCount: cardCount || 0, questionCount: questionCount || 0 };
+      })
+    );
+
+    // Attach counts to sets
+    const countMap = new Map(counts.map((c) => [c.id, c]));
+    sets = sets.map((s) => {
+      const c = countMap.get(s.id);
+      return Object.assign({}, s, {
+        cardCount: c?.cardCount ?? 0,
+        questionCount: c?.questionCount ?? 0,
+      }) as any;
+    });
   } catch (e) {
     // If Supabase is not configured, show helpful message
     return (
       <main className="space-y-4">
-        <h2 className="text-xl font-semibold">Sets</h2>
-        <p className="text-muted">Supabase connection not configured. Fill .env.local and restart.</p>
-        <Link className="rounded-md bg-accent px-3 py-2 text-white" href="/sets/new">Create set</Link>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Sets</h2>
+          <Link className="rounded-md bg-accent px-3 py-2 text-white" href="/sets/new">Create set</Link>
+        </div>
+        <div className="rounded-md bg-surface2 p-3">
+          <p className="text-red-400">Supabase connection not configured. Fill .env.local and restart.</p>
+        </div>
       </main>
     );
   }
@@ -39,11 +77,11 @@ export default async function SetsPage() {
         <h2 className="text-xl font-semibold">Sets</h2>
         <Link className="rounded-md bg-accent px-3 py-2 text-white" href="/sets/new">Create set</Link>
       </div>
+
+
       <ul className="space-y-2">
-        {sets.map((s) => {
-          const cardCount = Array.isArray(s.cards) && s.cards[0]?.count ? s.cards[0].count : 0;
-          const questionCount = Array.isArray(s.questions) && s.questions[0]?.count ? s.questions[0].count : 0;
-          const countLabel = s.type === 'flashcards' ? `${cardCount} cards` : `${questionCount} questions`;
+        {sets.map((s: any) => {
+          const countLabel = s.type === 'flashcards' ? `${s.cardCount} cards` : `${s.questionCount} questions`;
           return (
             <li key={s.id} className="rounded-md bg-surface2 p-3">
               <div className="flex items-center justify-between">
