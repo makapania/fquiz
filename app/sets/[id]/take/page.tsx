@@ -264,7 +264,8 @@ export default function TakeQuizPage() {
           <div className="mt-4 flex items-center gap-3">
             <Image src="/funkyhom.png" alt="Funkyhom" width={56} height={56} className="rounded" />
             <p className="text-xl font-semibold">
-              {(results?.total || 0) > 0 && (results?.incorrect || 0) === 0 ? 'to school for cool' : 'suboptimal'}
+-              {(results?.total || 0) > 0 && (results?.incorrect || 0) === 0 ? 'to school for cool' : 'suboptimal'}
++              {(results?.total || 0) > 0 && (results?.incorrect || 0) === 0 ? 'too school for cool' : 'suboptimal'}
             </p>
           </div>
 

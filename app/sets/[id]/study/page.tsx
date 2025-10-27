@@ -375,7 +375,8 @@ export default function StudyFlashcardsPage() {
           <div className="mt-4 flex items-center justify-center gap-3">
             <Image src="/funkyhom.png" alt="Funkyhom" width={56} height={56} className="rounded" />
             <p className="text-xl font-semibold">
-              {dontKnowCount > 0 ? 'suboptimal' : 'to school for cool'}
+-              {dontKnowCount > 0 ? 'suboptimal' : 'to school for cool'}
++              {dontKnowCount > 0 ? 'suboptimal' : 'too school for cool'}
             </p>
           </div>
           <div className="mt-4 flex justify-center gap-3">

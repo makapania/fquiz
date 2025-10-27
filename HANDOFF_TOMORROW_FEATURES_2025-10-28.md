@@ -207,6 +207,9 @@ This document summarizes the requested features to implement next, with clear ac
 - Ensure `authOptions` session callback includes `user.image`.
 - Update `WelcomeWithSession` to read `session.user.image` and render `<img>`/`<Image>` with alt text and fallback.
 
+**Copy Fixes**
+- Perfect score banner text for quizzes and flashcards now reads `too school for cool` (was `to school for cool`).
+
 **Touchpoints**
 - `src/lib/authOptions.ts` — session callback.
 - `app/components/WelcomeWithSession.tsx` — render avatar.
