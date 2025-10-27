@@ -64,6 +64,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       .from('questions')
       .insert({ set_id: params.id, stem, choices, correct_index, explanation });
     if (error) throw error;
+
+    // Bump parent set's updated_at so lists reflect recent changes
+    try {
+      await supabase
+        .from('sets')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', params.id);
+    } catch {}
+
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return new NextResponse(e.message || 'Server error', { status: 500 });

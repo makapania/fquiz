@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import MusicToggle from './components/MusicToggle';
 import { Providers } from './components/Providers';
 
@@ -17,9 +18,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="mx-auto max-w-4xl px-4 py-6">
             <header className="mb-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-semibold">FQuiz</h1>
-                  <p className="text-sm text-muted">Flashcards & Quizzes</p>
+                <div className="flex items-center gap-3">
+                  <Image 
+                    src="/funkyhom.png?v=2" 
+                    alt="FQuiz Logo" 
+                    width={72} 
+                     height={72}
+                     priority
+                     sizes="72px"
+                     className="rounded shrink-0"
+                  />
+                  <div>
+                     <h1 className="text-2xl font-semibold">FQuiz</h1>
+                     <p className="text-sm text-muted">Flashcards & Quizzes</p>
+                     <p className="text-sm text-muted">for Bipedal Primates</p>
+                   </div>
                 </div>
                 <nav className="text-sm">
                   <Link href="/" className="mr-4 text-accent">Home</Link>

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabaseClient';
 
+export const dynamic = 'force-dynamic';
+
 type SetRow = {
   id: string;
   title: string;

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 type Card = {
   id: string;
@@ -371,6 +372,12 @@ export default function StudyFlashcardsPage() {
           <p className="mt-2 text-muted">
             You reviewed all {cards.length} cards. Great work!
           </p>
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <Image src="/funkyhom.png" alt="Funkyhom" width={56} height={56} className="rounded" />
+            <p className="text-xl font-semibold">
+              {dontKnowCount > 0 ? 'suboptimal' : 'to school for cool'}
+            </p>
+          </div>
           <div className="mt-4 flex justify-center gap-3">
             <button
               onClick={resetProgress}

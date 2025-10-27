@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabaseClient';
 import WelcomeWithSession from './components/WelcomeWithSession';
 
+export const dynamic = 'force-dynamic';
+
 type SetRow = {
   id: string;
   title: string;
@@ -22,6 +24,29 @@ export default async function HomePage() {
       .limit(5);
     recent = (data as SetRow[]) ?? [];
   } catch {}
+
+  // Compute exact counts per set to avoid any relation aggregation quirks
+  const recentWithCounts = await Promise.all(
+    recent.map(async (s) => {
+      let cardCount = 0;
+      let questionCount = 0;
+      try {
+        const { count: cCount } = await supabase
+          .from('cards')
+          .select('id', { count: 'exact', head: true })
+          .eq('set_id', s.id);
+        cardCount = cCount || 0;
+      } catch {}
+      try {
+        const { count: qCount } = await supabase
+          .from('questions')
+          .select('id', { count: 'exact', head: true })
+          .eq('set_id', s.id);
+        questionCount = qCount || 0;
+      } catch {}
+      return { ...s, card_count: cardCount, question_count: questionCount } as SetRow & { card_count: number; question_count: number };
+    })
+  );
 
   return (
     <main className="space-y-6">
@@ -51,12 +76,10 @@ export default async function HomePage() {
           <Link href="/sets" className="text-accent">View all</Link>
         </div>
         <ul className="mt-2 space-y-2">
-          {recent.length === 0 ? (
+          {recentWithCounts.length === 0 ? (
             <li className="text-muted">No sets yet. Create one.</li>
-          ) : recent.map((s) => {
-            const cardCount = Array.isArray(s.cards) && s.cards[0]?.count ? s.cards[0].count : 0;
-            const questionCount = Array.isArray(s.questions) && s.questions[0]?.count ? s.questions[0].count : 0;
-            const countLabel = s.type === 'flashcards' ? `${cardCount} cards` : `${questionCount} questions`;
+          ) : recentWithCounts.map((s) => {
+            const countLabel = s.type === 'flashcards' ? `${s.card_count} cards` : `${s.question_count} questions`;
             return (
               <li key={s.id} className="flex items-center justify-between rounded-md bg-surface2 p-3">
                 <div>
