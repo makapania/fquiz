@@ -29,9 +29,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                      className="rounded shrink-0"
                   />
                   <div>
-                     <h1 className="text-2xl font-semibold">FQuiz</h1>
-                     <p className="text-sm text-muted">Flashcards & Quizzes</p>
-                     <p className="text-sm text-muted">for Bipedal Primates</p>
+                     <h1 className="text-3xl font-semibold">FQuiz</h1>
+                     <p className="text-base text-muted">Flashcards & Quizzes</p>
+                     <p className="text-base text-muted">for Bipedal Primates</p>
                    </div>
                 </div>
                 <nav className="text-sm">

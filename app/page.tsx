@@ -73,7 +73,7 @@ export default async function HomePage() {
         </div>
         <div className="rounded-lg bg-surface2 p-4 flex flex-col min-h-40">
           <h3 className="text-lg font-semibold">Quizzes</h3>
-          <p className="text-muted">Multiple-choice with 4 or 5 options, instant or deferred reveal.</p>
+          <p className="text-muted">Multiple-choice questions with instant or deferred reveal.</p>
           <Link href="/sets/new?type=quiz" className="mt-auto inline-block rounded-md bg-accent px-3 py-1 text-white">Start with Quiz</Link>
         </div>
       </section>
