@@ -51,6 +51,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
+    // Check permissions first
+    const { canEditSet } = await import('@/lib/permissions');
+    const { canEdit } = await canEditSet(params.id);
+    if (!canEdit) {
+      return new NextResponse('Forbidden: only the owner or public_editable sets can be edited', { status: 403 });
+    }
+
     const { prompt, answer, explanation } = await req.json();
     if (!prompt || !answer) {
       return new NextResponse('Missing prompt or answer', { status: 400 });

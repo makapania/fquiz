@@ -81,6 +81,13 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
+    // Check permissions first
+    const { canEditSet } = await import('@/lib/permissions');
+    const { canEdit } = await canEditSet(params.id);
+    if (!canEdit) {
+      return new NextResponse('Forbidden: only the owner or public_editable sets can be edited', { status: 403 });
+    }
+
     const payload = await req.json();
     const allowed = ['title','description','is_published','options'];
     const update: Record<string, any> = {};

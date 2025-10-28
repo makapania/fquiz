@@ -49,8 +49,8 @@ export default async function SetDetailPage({ params }: { params: { id: string }
       console.log('[OWNER CHECK SKIPPED]', { isAuthenticated, hasCreatedBy: !!set.created_by });
     }
 
-    const canEdit = isAuthenticated || publicEditable; // Authenticated users (NextAuth or guest) can edit
-    const canAdmin = isAuthenticated; // Authenticated users (NextAuth or guest) can access admin controls
+    const canEdit = isOwner || publicEditable; // Only owner or if public_editable is enabled
+    const canAdmin = isOwner; // Only owner can access admin controls
 
     // Check passcode grant cookie - must verify signature, not just existence
     const cookieName = grantCookieName(params.id);

@@ -52,6 +52,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
+    // Check permissions first
+    const { canEditSet } = await import('@/lib/permissions');
+    const { canEdit } = await canEditSet(params.id);
+    if (!canEdit) {
+      return new NextResponse('Forbidden: only the owner or public_editable sets can be edited', { status: 403 });
+    }
+
     const { stem, choices, correct_index, explanation } = await req.json();
     if (!stem || !Array.isArray(choices) || choices.length < 2) {
       return new NextResponse('Invalid question payload', { status: 400 });

@@ -5,6 +5,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const supabase = supabaseServer();
   const id = params.id;
   try {
+    // Get the question's set_id to check permissions
+    const { data: question } = await supabase
+      .from('questions')
+      .select('set_id')
+      .eq('id', id)
+      .single();
+
+    if (!question) {
+      return NextResponse.json({ error: 'Question not found' }, { status: 404 });
+    }
+
+    // Check permissions
+    const { canEditSet } = await import('@/lib/permissions');
+    const { canEdit } = await canEditSet(question.set_id);
+    if (!canEdit) {
+      return NextResponse.json({ error: 'Forbidden: only the owner or public_editable sets can be edited' }, { status: 403 });
+    }
+
     const body = await req.json();
     const update: any = {};
 
@@ -66,6 +84,24 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const supabase = supabaseServer();
   const id = params.id;
   try {
+    // Get the question's set_id to check permissions
+    const { data: question } = await supabase
+      .from('questions')
+      .select('set_id')
+      .eq('id', id)
+      .single();
+
+    if (!question) {
+      return NextResponse.json({ error: 'Question not found' }, { status: 404 });
+    }
+
+    // Check permissions
+    const { canEditSet } = await import('@/lib/permissions');
+    const { canEdit } = await canEditSet(question.set_id);
+    if (!canEdit) {
+      return NextResponse.json({ error: 'Forbidden: only the owner or public_editable sets can be edited' }, { status: 403 });
+    }
+
     const { error } = await supabase.from('questions').delete().eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ ok: true });
