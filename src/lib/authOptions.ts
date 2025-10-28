@@ -8,6 +8,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   providers.push(GoogleProvider({
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    allowDangerousEmailAccountLinking: true,
     authorization: {
       params: {
         prompt: 'consent',
@@ -31,8 +32,6 @@ export const authOptions: NextAuthOptions = {
   },
   // Enable verbose logging in development or when NEXTAUTH_DEBUG=true
   debug: process.env.NODE_ENV === 'development' || process.env.NEXTAUTH_DEBUG === 'true',
-  // Prevent OAuthAccountNotLinked by allowing linking accounts with same email
-  allowDangerousEmailAccountLinking: true,
   callbacks: {
     async signIn({ user, account, profile }) {
       console.log('[NextAuth] signIn callback triggered');

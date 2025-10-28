@@ -66,7 +66,7 @@ export default async function SetDetailPage({ params }: { params: { id: string }
     const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
 
     // Use owner bypass if we have owner info, otherwise allow signed-in users to bypass
-    const needsPass = !!set.passcode_required && !hasValidPasscode && !isOwner && !isSignedIn;
+    const needsPass = !!set.passcode_required && !hasValidPasscode && !isOwner && !isAuthenticated;
     return (
       <main className="space-y-4">
         <div className="flex items-center justify-between">
@@ -128,7 +128,7 @@ export default async function SetDetailPage({ params }: { params: { id: string }
           </div>
         )}
         {canAdmin && (
-          <AdminControls id={params.id} initial={{ is_published: !!set.is_published, passcode_required: !!set.passcode_required, passcode_expires_at: set.passcode_expires_at, type: set.type, options: set.options || {} }} isOwner={isOwner || (!set.created_by && isSignedIn)} />
+          <AdminControls id={params.id} initial={{ is_published: !!set.is_published, passcode_required: !!set.passcode_required, passcode_expires_at: set.passcode_expires_at, type: set.type, options: set.options || {} }} isOwner={isOwner || (!set.created_by && isAuthenticated)} />
         )}
       </main>
     );
