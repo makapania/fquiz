@@ -89,7 +89,7 @@ export default function WelcomeAuth() {
                     className="rounded-md bg-surface px-3 py-2"
                     onClick={() => router.push('/guest/checkin')}
                   >
-                    Check in without Google
+                    Check in with FQuiz
                   </button>
                   <button
                     className="rounded-md bg-accent px-3 py-2 text-white"
