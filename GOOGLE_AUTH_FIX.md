@@ -28,7 +28,7 @@
    ```
    http://localhost:3000
    ```
-   (Remove any entries for `http://localhost:3004` if present)
+   (Remove any entries for `http://localhost:3004` if present - use `http://localhost:3000` instead)
 
 5. Under **Authorized redirect URIs**, ensure you have:
    ```

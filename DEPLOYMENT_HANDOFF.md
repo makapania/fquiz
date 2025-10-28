@@ -2,7 +2,7 @@
 
 **Date:** January 2025
 **Status:** ✅ Successfully deployed to Vercel
-**Production URL:** Your Vercel deployment URL
+**Production URL:** https://fquiz-xi.vercel.app
 **Developer:** matt.sponheimer@gmail.com
 
 ---
@@ -42,7 +42,7 @@ The application is **fully deployed and working** on Vercel with:
 
 #### NextAuth (Authentication)
 ```bash
-NEXTAUTH_URL=http://localhost:3004  # Local: http://localhost:3004, Prod: https://your-domain.vercel.app
+NEXTAUTH_URL=http://localhost:3000  # Local: http://localhost:3000, Prod: https://fquiz-xi.vercel.app
 NEXTAUTH_SECRET=<random-string-20+-chars>  # Generate with: openssl rand -base64 32
 GOOGLE_CLIENT_ID=<your-google-oauth-client-id>
 GOOGLE_CLIENT_SECRET=<your-google-oauth-client-secret>
@@ -159,7 +159,7 @@ See `VERIFY_RLS.md` for detailed verification steps.
 ### Local Development
 **Authorized redirect URI:**
 ```
-http://localhost:3004/api/auth/callback/google
+http://localhost:3000/api/auth/callback/google
 ```
 
 ### Production
@@ -330,7 +330,7 @@ fquiz/
 2. **Test locally:**
    ```bash
    npm run dev
-   # Visit http://localhost:3004
+   # Visit http://localhost:3000
    ```
 3. **Commit and push:**
    ```bash

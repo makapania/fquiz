@@ -81,7 +81,7 @@ Both `/api/sets/[id]/questions` and `/api/sets/[id]/cards`:
    ```
    http://localhost:3000
    ```
-   ❌ Remove `http://localhost:3004` if present
+   ❌ Remove `http://localhost:3004` if present (use `http://localhost:3000` instead)
 
 5. **Authorized redirect URIs** - Set to:
    ```

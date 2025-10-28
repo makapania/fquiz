@@ -39,10 +39,10 @@ The Google Cloud Console probably doesn't have the production callback URL confi
 3. Click "Edit"
 4. Under **"Authorized redirect URIs"**, you should have BOTH:
    - ✅ `http://localhost:3000/api/auth/callback/google` (for local dev)
-   - ❌ `https://fquiz.vercel.app/api/auth/callback/google` (MISSING - add this!)
+   - ❌ `https://fquiz-xi.vercel.app/api/auth/callback/google` (MISSING - add this!)
 5. Under **"Authorized JavaScript origins"**, you should have BOTH:
    - ✅ `http://localhost:3000`
-   - ❌ `https://fquiz.vercel.app` (MISSING - add this!)
+   - ❌ `https://fquiz-xi.vercel.app` (MISSING - add this!)
 6. Click **SAVE**
 7. Wait 5 minutes for Google to propagate changes
 8. Test again
@@ -53,7 +53,7 @@ Verify in Vercel environment variables that `NEXTAUTH_URL` exactly matches your 
 
 **Check:**
 - Vercel Settings → Environment Variables → `NEXTAUTH_URL`
-- Should be: `https://fquiz.vercel.app` (or whatever your actual Vercel URL is)
+- Should be: `https://fquiz-xi.vercel.app`
 - No extra `https://`, no trailing slash, no spaces
 
 ### 3. **Authorization Prompt Parameters**
@@ -93,7 +93,7 @@ Then commit and redeploy.
 
 **Verified in Vercel Production:**
 ```bash
-✅ NEXTAUTH_URL=https://fquiz.vercel.app
+✅ NEXTAUTH_URL=https://fquiz-xi.vercel.app
 ✅ NEXTAUTH_SECRET=<set>
 ✅ GOOGLE_CLIENT_ID=<set>
 ✅ GOOGLE_CLIENT_SECRET=<set>
@@ -143,7 +143,7 @@ Then commit and redeploy.
 
 ### Step 3: Debugging
 If the issue persists, check:
-- Visit `https://fquiz.vercel.app/api/auth/providers` - should show Google
+- Visit `https://fquiz-xi.vercel.app/api/auth/providers` - should show Google
 - Browser DevTools → Network tab → look for the redirect URL being sent
 - Check if Google shows any additional error details
 
@@ -185,13 +185,13 @@ This is a configuration issue, not a code issue. The exact same code works local
 
 ## Quick Reference
 
-**Your Deployment URL:** `https://fquiz.vercel.app`
+**Your Deployment URL:** `https://fquiz-xi.vercel.app`
 
 **Google OAuth Console:** https://console.cloud.google.com/apis/credentials
 
-**Required Redirect URI:** `https://fquiz.vercel.app/api/auth/callback/google`
+**Required Redirect URI:** `https://fquiz-xi.vercel.app/api/auth/callback/google`
 
-**Required JavaScript Origin:** `https://fquiz.vercel.app`
+**Required JavaScript Origin:** `https://fquiz-xi.vercel.app`
 
 ---
 
