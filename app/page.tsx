@@ -27,6 +27,7 @@ export default async function HomePage() {
     const { data } = await supabase
       .from('sets')
       .select('id,title,type,is_published')
+      .eq('is_published', true)
       .order('created_at', { ascending: false })
       .limit(5);
     recent = (data as SetRow[]) ?? [];

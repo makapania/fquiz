@@ -1,3 +1,8 @@
+-- Ensure idempotency: drop policies if they already exist
+DROP POLICY IF EXISTS read_published_sets_public ON sets;
+DROP POLICY IF EXISTS read_cards_when_set_published ON cards;
+DROP POLICY IF EXISTS read_questions_when_set_published ON questions;
+
 -- Enable RLS on core tables
 ALTER TABLE sets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cards ENABLE ROW LEVEL SECURITY;

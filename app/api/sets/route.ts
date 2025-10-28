@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
+import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
   try {
@@ -13,14 +14,20 @@ export async function POST(req: Request) {
     const supabase = supabaseServer();
 
     // Get the current user's ID to set as created_by
+    // Check both NextAuth session and guest check-in cookies
     let created_by = null;
     const session = await getServerSession(authOptions);
-    console.log('[CREATE SET] Session:', session?.user?.email);
-    if (session?.user?.email) {
+    const guestEmailCookie = cookies().get('guest_email');
+    const guestEmail = guestEmailCookie?.value || null;
+    
+    const userEmail = session?.user?.email || guestEmail;
+    console.log('[CREATE SET] User email:', userEmail, '(from:', session?.user?.email ? 'session' : 'guest cookie', ')');
+    
+    if (userEmail) {
       const { data: user, error: userError } = await supabase
         .from('users')
         .select('id')
-        .eq('email', session.user.email)
+        .eq('email', userEmail)
         .single();
       console.log('[CREATE SET] User lookup:', { found: !!user, userId: user?.id, error: userError?.message });
       created_by = user?.id || null;

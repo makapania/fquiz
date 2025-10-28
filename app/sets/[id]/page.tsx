@@ -18,20 +18,25 @@ export default async function SetDetailPage({ params }: { params: { id: string }
     if (error || !set) throw new Error('Failed to load set');
 
     const session = await getServerSession(authOptions);
-    const isSignedIn = !!session?.user?.email;
+    const guestEmailCookie = cookies().get('guest_email');
+    const guestEmail = guestEmailCookie?.value || null;
+    
+    // User is authenticated if they have either a NextAuth session OR guest check-in
+    const isAuthenticated = !!(session?.user?.email || guestEmail);
+    const userEmail = session?.user?.email || guestEmail;
     const publicEditable = !!(set.options && set.options.public_editable);
 
-    // Check if the signed-in user is the owner of this set
+    // Check if the authenticated user is the owner of this set
     let isOwner = false;
-    if (isSignedIn && set.created_by) {
+    if (isAuthenticated && set.created_by && userEmail) {
       const { data: user, error: userError } = await supabase
         .from('users')
         .select('id')
-        .eq('email', session.user.email)
+        .eq('email', userEmail)
         .single();
 
       console.log('[OWNER CHECK]', {
-        sessionEmail: session.user.email,
+        userEmail,
         userFound: !!user,
         userId: user?.id,
         setCreatedBy: set.created_by,
@@ -41,11 +46,11 @@ export default async function SetDetailPage({ params }: { params: { id: string }
 
       isOwner = user?.id === set.created_by;
     } else {
-      console.log('[OWNER CHECK SKIPPED]', { isSignedIn, hasCreatedBy: !!set.created_by });
+      console.log('[OWNER CHECK SKIPPED]', { isAuthenticated, hasCreatedBy: !!set.created_by });
     }
 
-    const canEdit = isSignedIn || publicEditable; // Signed-in users can edit
-    const canAdmin = isSignedIn; // Signed-in users can access admin controls
+    const canEdit = isAuthenticated || publicEditable; // Authenticated users (NextAuth or guest) can edit
+    const canAdmin = isAuthenticated; // Authenticated users (NextAuth or guest) can access admin controls
 
     // Check passcode grant cookie - must verify signature, not just existence
     const cookieName = grantCookieName(params.id);
