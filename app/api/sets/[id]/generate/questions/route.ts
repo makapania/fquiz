@@ -19,7 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const body = await req.json();
     const source = String(body.source || 'prompt'); // 'prompt' | 'upload'
     const provider = String(body.provider || 'basic'); // 'basic' | 'openai' | 'anthropic' | 'zai' | 'openrouter' | 'google'
-    const count = Math.max(1, Math.min(20, Number(body.count || 5)));
+    const count = Math.max(1, Math.min(50, Number(body.count || 10)));
     const apiKey = body.api_key ? String(body.api_key) : undefined;
     const model = body.model ? String(body.model) : undefined;
     const baseUrl = body.base_url ? String(body.base_url) : undefined;

@@ -26,6 +26,7 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
   const [aiFile, setAiFile] = useState<File | null>(null);
   const [aiBaseUrl, setAiBaseUrl] = useState('');
   const [useCustomZaiBaseUrl, setUseCustomZaiBaseUrl] = useState(false);
+  const [aiCount, setAiCount] = useState(10);
   const [prompt, setPrompt] = useState('');
   const [answer, setAnswer] = useState('');
   const [explanation, setExplanation] = useState('');
@@ -300,7 +301,7 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
       const payload: any = {
         source: aiSource,
         provider: aiProvider,
-        count: 5,
+        count: aiCount,
       };
       if (aiSource === 'prompt') payload.prompt = aiPrompt;
       if (upload_id) payload.upload_id = upload_id;
@@ -348,7 +349,7 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
       const payload: any = {
         source: aiSource,
         provider: aiProvider,
-        count: 10,
+        count: aiCount,
       };
       if (aiSource === 'prompt') payload.prompt = aiPrompt;
       if (upload_id) payload.upload_id = upload_id;
@@ -501,8 +502,19 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
                   } catch {}
                 }} placeholder={aiProvider==='openai' ? 'OpenAI API key' : aiProvider==='anthropic' ? 'Anthropic API key' : aiProvider==='zai' ? 'Z.ai API key' : aiProvider==='openrouter' ? 'OpenRouter API key' : aiProvider==='google' ? 'Google Generative AI API key' : 'leave blank to use env key'} />
               </div>
+              <div>
+                <label className="block text-sm mb-1">How many flashcards?</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={aiCount}
+                  onChange={(e) => setAiCount(Math.max(1, Math.min(50, parseInt(e.target.value) || 10)))}
+                  className="w-24 rounded-md bg-surface p-2 text-center"
+                />
+              </div>
               <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateFlashcardsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile) || !isSignedIn}>
-                {loading ? 'Generating...' : 'Generate 10 flashcards'}
+                {loading ? 'Generating...' : `Generate ${aiCount} flashcard${aiCount !== 1 ? 's' : ''}`}
               </button>
             </div>
             <div className="flex items-center gap-3 text-sm">
@@ -705,8 +717,19 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
                 } catch {}
               }} placeholder={aiProvider==='openai' ? 'OpenAI API key' : aiProvider==='anthropic' ? 'Anthropic API key' : aiProvider==='zai' ? 'Z.ai API key' : aiProvider==='openrouter' ? 'OpenRouter API key' : aiProvider==='google' ? 'Google Generative AI API key' : 'leave blank to use env key'} />
             </div>
+            <div>
+              <label className="block text-sm mb-1">How many questions?</label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={aiCount}
+                onChange={(e) => setAiCount(Math.max(1, Math.min(50, parseInt(e.target.value) || 10)))}
+                className="w-24 rounded-md bg-surface p-2 text-center"
+              />
+            </div>
             <button className="rounded-md bg-accent px-3 py-2 text-white" onClick={generateQuestionsAI} disabled={loading || (aiSource==='prompt' && !aiPrompt) || (aiSource==='upload' && !aiFile) || !isSignedIn}>
-              {loading ? 'Generating...' : 'Generate 5 questions'}
+              {loading ? 'Generating...' : `Generate ${aiCount} question${aiCount !== 1 ? 's' : ''}`}
             </button>
           </div>
           <div className="flex items-center gap-3 text-sm flex-wrap">
