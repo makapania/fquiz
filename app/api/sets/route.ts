@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
+import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
   try {
@@ -7,8 +10,35 @@ export async function POST(req: Request) {
     if (!title || !type || !['flashcards','quiz'].includes(type)) {
       return new NextResponse('Invalid payload', { status: 400 });
     }
+
     const supabase = supabaseServer();
-    const { data, error } = await supabase.from('sets').insert({ title, type }).select('id').single();
+
+    // Get the current user's ID to set as created_by
+    // Check both NextAuth session and guest check-in cookies
+    let created_by = null;
+    const session = await getServerSession(authOptions);
+    const guestEmailCookie = cookies().get('guest_email');
+    const guestEmail = guestEmailCookie?.value || null;
+    
+    const userEmail = session?.user?.email || guestEmail;
+    console.log('[CREATE SET] User email:', userEmail, '(from:', session?.user?.email ? 'session' : 'guest cookie', ')');
+    
+    if (userEmail) {
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', userEmail)
+        .single();
+      console.log('[CREATE SET] User lookup:', { found: !!user, userId: user?.id, error: userError?.message });
+      created_by = user?.id || null;
+    }
+    console.log('[CREATE SET] created_by:', created_by);
+
+    const { data, error } = await supabase
+      .from('sets')
+      .insert({ title, type, created_by })
+      .select('id')
+      .single();
     if (error) throw error;
     return NextResponse.json({ id: data.id });
   } catch (e: any) {

@@ -260,6 +260,15 @@ export default function TakeQuizPage() {
           <h2 className="text-2xl font-semibold">Quiz Complete!</h2>
           <p className="mt-2 text-lg text-muted">{quizSet?.title}</p>
 
+          {/* Funkyhom completion banner */}
+          <div className="mt-4 flex items-center gap-3">
+            <Image src="/funkyhom.png" alt="Funkyhom" width={56} height={56} className="rounded" />
+            <p className="text-xl font-semibold">
+-              {(results?.total || 0) > 0 && (results?.incorrect || 0) === 0 ? 'to school for cool' : 'suboptimal'}
++              {(results?.total || 0) > 0 && (results?.incorrect || 0) === 0 ? 'too school for cool' : 'suboptimal'}
+            </p>
+          </div>
+
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="rounded-lg bg-surface2 p-4">
               <p className="text-sm text-muted">Total Questions</p>

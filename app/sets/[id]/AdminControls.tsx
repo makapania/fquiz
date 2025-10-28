@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function AdminControls({ id, initial }: { id: string; initial: { is_published: boolean; passcode_required: boolean; passcode_expires_at: string | null; type: 'flashcards' | 'quiz'; options?: { reveal?: 'immediate' | 'deferred'; public_editable?: boolean } } }) {
+export default function AdminControls({ id, initial, isOwner = false }: { id: string; initial: { is_published: boolean; passcode_required: boolean; passcode_expires_at: string | null; type: 'flashcards' | 'quiz'; options?: { reveal?: 'immediate' | 'deferred'; public_editable?: boolean } }, isOwner?: boolean }) {
   const [isPublished, setIsPublished] = useState(initial.is_published);
   const [pcRequired, setPcRequired] = useState(initial.passcode_required);
   const [expiresAt, setExpiresAt] = useState<string | null>(initial.passcode_expires_at);
@@ -146,6 +146,24 @@ export default function AdminControls({ id, initial }: { id: string; initial: { 
     }
   }
 
+  async function deleteSet() {
+    if (!window.confirm('Delete this set? This will remove all cards/questions and attempts.')) return;
+    setLoading(true);
+    setStatus(null);
+    try {
+      const res = await fetch(`/api/sets/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+      if (!res.ok) throw new Error(await res.text());
+      setStatus('Set deleted');
+      router.push('/sets');
+      // Ensure the sets list revalidates and reflects the deletion immediately
+      setTimeout(() => router.refresh(), 100);
+    } catch (e: any) {
+      setStatus(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <section className="rounded-md bg-surface2 p-4 space-y-3">
       <h3 className="font-semibold">Admin Controls</h3>
@@ -205,6 +223,16 @@ export default function AdminControls({ id, initial }: { id: string; initial: { 
         </div>
         <p className="text-sm text-muted">Current: {pcRequired ? 'Required' : 'Not required'} {expiresAt ? `• Expires: ${expiresAt}` : ''}</p>
       </div>
+      {/* Danger Zone */}
+      {isOwner && (
+        <div className="rounded-md bg-red-900/30 p-4 space-y-2">
+          <h4 className="font-semibold text-red-400">Danger Zone</h4>
+          <p className="text-sm text-muted">Deleting removes the set and all its content. This cannot be undone.</p>
+          <button className="rounded-md bg-red-600 px-3 py-2 text-white" onClick={deleteSet} disabled={loading}>
+            Delete Set
+          </button>
+        </div>
+      )}
       {status && <p className="text-sm">{status}</p>}
     </section>
   );

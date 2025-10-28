@@ -39,7 +39,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     const { data, error } = await supabase
       .from('cards')
-      .select('id,front,back')
+      .select('id,kind,prompt,answer,explanation')
       .eq('set_id', params.id)
       .order('id', { ascending: true });
     if (error) throw error;
@@ -60,6 +60,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       .from('cards')
       .insert({ set_id: params.id, kind: 'term', prompt, answer, explanation });
     if (error) throw error;
+
+    // Bump parent set's updated_at so lists reflect recent changes
+    try {
+      await supabase
+        .from('sets')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', params.id);
+    } catch {}
+
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return new NextResponse(e.message || 'Server error', { status: 500 });

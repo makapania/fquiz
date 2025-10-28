@@ -1,27 +1,60 @@
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabaseClient';
 import WelcomeWithSession from './components/WelcomeWithSession';
+import { unstable_noStore as noStore } from 'next/cache';
+import { headers } from 'next/headers';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Disable Next.js data cache for this page to ensure fresh results
+noStore();
 
 type SetRow = {
   id: string;
   title: string;
   type: 'flashcards' | 'quiz';
   is_published: boolean;
-  cards?: Array<{ count: number }>;
-  questions?: Array<{ count: number }>;
 };
 
 export default async function HomePage() {
+  // Force fresh data by accessing headers (makes this truly dynamic)
+  const headersList = headers();
+  
   const supabase = supabaseServer();
   let recent: SetRow[] = [];
   try {
     const { data } = await supabase
       .from('sets')
-      .select('id,title,type,is_published,cards(count),questions(count)')
-      .order('updated_at', { ascending: false })
+      .select('id,title,type,is_published')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false })
       .limit(5);
     recent = (data as SetRow[]) ?? [];
   } catch {}
+
+  // Compute exact counts per set to avoid any relation aggregation quirks
+  const recentWithCounts = await Promise.all(
+    recent.map(async (s) => {
+      let cardCount = 0;
+      let questionCount = 0;
+      try {
+        const { count: cCount } = await supabase
+          .from('cards')
+          .select('id', { count: 'exact', head: true })
+          .eq('set_id', s.id);
+        cardCount = cCount || 0;
+      } catch {}
+      try {
+        const { count: qCount } = await supabase
+          .from('questions')
+          .select('id', { count: 'exact', head: true })
+          .eq('set_id', s.id);
+        questionCount = qCount || 0;
+      } catch {}
+      return { ...s, card_count: cardCount, question_count: questionCount } as SetRow & { card_count: number; question_count: number };
+    })
+  );
 
   return (
     <main className="space-y-6">
@@ -51,12 +84,10 @@ export default async function HomePage() {
           <Link href="/sets" className="text-accent">View all</Link>
         </div>
         <ul className="mt-2 space-y-2">
-          {recent.length === 0 ? (
+          {recentWithCounts.length === 0 ? (
             <li className="text-muted">No sets yet. Create one.</li>
-          ) : recent.map((s) => {
-            const cardCount = Array.isArray(s.cards) && s.cards[0]?.count ? s.cards[0].count : 0;
-            const questionCount = Array.isArray(s.questions) && s.questions[0]?.count ? s.questions[0].count : 0;
-            const countLabel = s.type === 'flashcards' ? `${cardCount} cards` : `${questionCount} questions`;
+          ) : recentWithCounts.map((s) => {
+            const countLabel = s.type === 'flashcards' ? `${s.card_count} cards` : `${s.question_count} questions`;
             return (
               <li key={s.id} className="flex items-center justify-between rounded-md bg-surface2 p-3">
                 <div>

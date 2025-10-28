@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/authOptions';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -15,6 +17,63 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
 
     return NextResponse.json(set);
+  } catch (e: any) {
+    return new NextResponse(e.message || 'Server error', { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  try {
+    const supabase = supabaseServer();
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
+    const { data: set, error: setError } = await supabase
+      .from('sets')
+      .select('id, created_by')
+      .eq('id', params.id)
+      .single();
+    if (setError || !set) {
+      return new NextResponse('Set not found', { status: 404 });
+    }
+
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', session.user.email)
+      .single();
+    if (userError) {
+      console.log('[DELETE SET] User lookup error:', userError.message);
+    }
+
+    const isOwnerless = !set.created_by;
+    const isOwnerMatch = !!(user?.id && set.created_by && user.id === set.created_by);
+    if (!isOwnerless && !isOwnerMatch) {
+      return new NextResponse('Forbidden: only the owner can delete this set', { status: 403 });
+    }
+
+    const { error } = await supabase
+      .from('sets')
+      .delete()
+      .eq('id', params.id);
+    if (error) throw error;
+
+    // Verify deletion actually removed the row
+    const { data: check, error: checkError } = await supabase
+      .from('sets')
+      .select('id')
+      .eq('id', params.id)
+      .single();
+
+    if (!checkError) {
+      // Row still exists; deletion did not succeed
+      return new NextResponse('Delete failed: row still exists', { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true, id: params.id });
   } catch (e: any) {
     return new NextResponse(e.message || 'Server error', { status: 500 });
   }

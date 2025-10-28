@@ -373,6 +373,12 @@ export default function StudyFlashcardsPage() {
             <p className="mt-2 text-muted">
               You reviewed all {cards.length} cards. Great work!
             </p>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <Image src="/funkyhom.png" alt="Funkyhom" width={56} height={56} className="rounded" />
+              <p className="text-xl font-semibold">
+                {dontKnowCount > 0 ? 'suboptimal' : 'too school for cool'}
+              </p>
+            </div>
             <div className="mt-4 flex justify-center gap-3">
               <button
                 onClick={resetProgress}
@@ -388,7 +394,6 @@ export default function StudyFlashcardsPage() {
               </button>
             </div>
           </div>
-          
           {knowCount === cards.length && (
             <div className="rounded-lg bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-6 text-center border border-purple-500/30">
               <div className="flex items-center justify-center gap-4">

@@ -1,3 +1,16 @@
+-- Ensure idempotency: drop existing insert/update/delete policies before recreating
+DROP POLICY IF EXISTS insert_sets_all ON sets;
+DROP POLICY IF EXISTS update_sets_all ON sets;
+DROP POLICY IF EXISTS delete_sets_all ON sets;
+
+DROP POLICY IF EXISTS insert_cards_all ON cards;
+DROP POLICY IF EXISTS update_cards_all ON cards;
+DROP POLICY IF EXISTS delete_cards_all ON cards;
+
+DROP POLICY IF EXISTS insert_questions_all ON questions;
+DROP POLICY IF EXISTS update_questions_all ON questions;
+DROP POLICY IF EXISTS delete_questions_all ON questions;
+
 -- Add INSERT, UPDATE, DELETE policies for sets, cards, and questions
 -- This allows server-side operations and authenticated users to manage content
 

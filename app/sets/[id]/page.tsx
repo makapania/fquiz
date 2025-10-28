@@ -7,6 +7,9 @@ import PasscodeForm from './PasscodeForm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import { grantCookieName, verifyGrantValue } from '@/lib/passcodeGrant';
+import { unstable_noStore as noStore } from 'next/cache';
+
+noStore();
 
 export default async function SetDetailPage({ params }: { params: { id: string } }) {
   try {
@@ -15,10 +18,39 @@ export default async function SetDetailPage({ params }: { params: { id: string }
     if (error || !set) throw new Error('Failed to load set');
 
     const session = await getServerSession(authOptions);
-    const isSignedIn = !!session?.user?.email;
+    const guestEmailCookie = cookies().get('guest_email');
+    const guestEmail = guestEmailCookie?.value || null;
+    
+    // User is authenticated if they have either a NextAuth session OR guest check-in
+    const isAuthenticated = !!(session?.user?.email || guestEmail);
+    const userEmail = session?.user?.email || guestEmail;
     const publicEditable = !!(set.options && set.options.public_editable);
-    const canEdit = isSignedIn || publicEditable; // later: refine with ownership/roles
-    const canAdmin = isSignedIn; // later: restrict to owner or instructor role
+
+    // Check if the authenticated user is the owner of this set
+    let isOwner = false;
+    if (isAuthenticated && set.created_by && userEmail) {
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', userEmail)
+        .single();
+
+      console.log('[OWNER CHECK]', {
+        userEmail,
+        userFound: !!user,
+        userId: user?.id,
+        setCreatedBy: set.created_by,
+        match: user?.id === set.created_by,
+        userError: userError?.message
+      });
+
+      isOwner = user?.id === set.created_by;
+    } else {
+      console.log('[OWNER CHECK SKIPPED]', { isAuthenticated, hasCreatedBy: !!set.created_by });
+    }
+
+    const canEdit = isAuthenticated || publicEditable; // Authenticated users (NextAuth or guest) can edit
+    const canAdmin = isAuthenticated; // Authenticated users (NextAuth or guest) can access admin controls
 
     // Check passcode grant cookie - must verify signature, not just existence
     const cookieName = grantCookieName(params.id);
@@ -33,7 +65,8 @@ export default async function SetDetailPage({ params }: { params: { id: string }
     // Check if passcode is expired at DB level
     const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
 
-    const needsPass = !!set.passcode_required && !hasValidPasscode && !isSignedIn;
+    // Use owner bypass if we have owner info, otherwise allow signed-in users to bypass
+    const needsPass = !!set.passcode_required && !hasValidPasscode && !isOwner && !isSignedIn;
     return (
       <main className="space-y-4">
         <div className="flex items-center justify-between">
@@ -53,7 +86,7 @@ export default async function SetDetailPage({ params }: { params: { id: string }
           )
         ) : (
           <div className="space-y-4">
-            {set.type === 'quiz' && set.is_published && (
+            {set.type === 'quiz' && (set.is_published || isOwner) && (
               <div className="rounded-md bg-accent/20 p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -69,7 +102,7 @@ export default async function SetDetailPage({ params }: { params: { id: string }
                 </div>
               </div>
             )}
-            {set.type === 'flashcards' && set.is_published && (
+            {set.type === 'flashcards' && (set.is_published || isOwner) && (
               <div className="rounded-md bg-accent/20 p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -95,7 +128,7 @@ export default async function SetDetailPage({ params }: { params: { id: string }
           </div>
         )}
         {canAdmin && (
-          <AdminControls id={params.id} initial={{ is_published: !!set.is_published, passcode_required: !!set.passcode_required, passcode_expires_at: set.passcode_expires_at, type: set.type, options: set.options || {} }} />
+          <AdminControls id={params.id} initial={{ is_published: !!set.is_published, passcode_required: !!set.passcode_required, passcode_expires_at: set.passcode_expires_at, type: set.type, options: set.options || {} }} isOwner={isOwner || (!set.created_by && isSignedIn)} />
         )}
       </main>
     );
