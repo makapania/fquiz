@@ -96,7 +96,17 @@ export async function generateWithAnthropic(params: { apiKey: string; model?: st
 }
 
 export async function generateWithGoogle(params: { apiKey: string; model?: string; inputText: string; count: number; baseUrl?: string }) {
-  const { apiKey, model = 'gemini-1.5-flash', inputText, count, baseUrl } = params;
+  const { apiKey, model = 'gemini-2.5-flash', inputText, count, baseUrl } = params;
+  const ALLOWED_GOOGLE_MODELS = new Set([
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-preview',
+    'gemini-2.0-flash-exp',
+    'gemini-2.0-flash'
+  ]);
+  if (model && !ALLOWED_GOOGLE_MODELS.has(model)) {
+    console.warn('[AI][google] Invalid model specified:', model);
+    throw new Error(`Invalid Google Gemini model: ${model}. Allowed: ${Array.from(ALLOWED_GOOGLE_MODELS).join(', ')}`);
+  }
   const base = baseUrl || process.env.GOOGLE_GENAI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
   const instructions = buildInstructions(inputText, count);
   const url = `${base}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -292,7 +302,17 @@ export async function generateFlashcardsWithAnthropic(params: { apiKey: string; 
 }
 
 export async function generateFlashcardsWithGoogle(params: { apiKey: string; model?: string; inputText: string; count: number; baseUrl?: string }) {
-  const { apiKey, model = 'gemini-1.5-flash', inputText, count, baseUrl } = params;
+  const { apiKey, model = 'gemini-2.5-flash', inputText, count, baseUrl } = params;
+  const ALLOWED_GOOGLE_MODELS = new Set([
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-preview',
+    'gemini-2.0-flash-exp',
+    'gemini-2.0-flash'
+  ]);
+  if (model && !ALLOWED_GOOGLE_MODELS.has(model)) {
+    console.warn('[AI][google][flashcards] Invalid model specified:', model);
+    throw new Error(`Invalid Google Gemini model: ${model}. Allowed: ${Array.from(ALLOWED_GOOGLE_MODELS).join(', ')}`);
+  }
   const base = baseUrl || process.env.GOOGLE_GENAI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
   const instructions = buildFlashcardInstructions(inputText, count);
   const url = `${base}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;

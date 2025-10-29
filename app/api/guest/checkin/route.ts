@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         // User has a password set - verify it
         const ok = await bcrypt.compare(password, existing.password_hash as string);
         if (!ok) {
-          return NextResponse.json({ error: 'Incorrect password for this email address' }, { status: 401 });
+          return NextResponse.json({ error: 'Wrong password' }, { status: 401 });
         }
       } else {
         // User exists but has no password (likely created via Google OAuth)

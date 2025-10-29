@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const body = await req.json();
     const source = String(body.source || 'prompt'); // 'prompt' | 'upload'
-    const provider = String(body.provider || 'basic'); // 'basic' | 'openai' | 'anthropic' | 'zai' | 'openrouter' | 'google'
+    const provider = String(body.provider || process.env.DEFAULT_AI_PROVIDER || 'google'); // 'basic' | 'openai' | 'anthropic' | 'zai' | 'openrouter' | 'google'
     const count = Math.max(1, Math.min(50, Number(body.count || 10)));
     const apiKey = body.api_key ? String(body.api_key) : undefined;
     const model = body.model ? String(body.model) : undefined;
@@ -43,6 +43,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       if (!inputText) return NextResponse.json({ error: 'prompt required' }, { status: 400 });
     }
 
+    const start = Date.now();
     let cards: Array<{ term: string; answer: string; explanation?: string | null }> = [];
     if (provider === 'openai') {
       const key = apiKey || process.env.OPENAI_API_KEY || '';
@@ -70,6 +71,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       cards = await generateFlashcardsBasic({ inputText, count });
     }
 
+    const latencyMs = Date.now() - start;
+    console.log('[AI][cards] provider=%s model=%s count=%d source=%s latencyMs=%d', provider, model || '-', count, source, latencyMs);
+
     // Insert into DB
     const rows = cards.map((c) => ({ set_id: params.id, kind: 'term', prompt: c.term, answer: c.answer, explanation: c.explanation ?? null }));
     const { data, error } = await supabase.from('cards').insert(rows).select('id');
@@ -77,6 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ inserted: data?.length ?? 0 });
   } catch (e: any) {
+    console.error('[AI][cards][error]', { message: e?.message, stack: e?.stack });
     return NextResponse.json({ error: e.message || 'Server error' }, { status: 500 });
   }
 }

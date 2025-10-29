@@ -21,13 +21,18 @@ export default function GuestCheckinPage() {
         body: JSON.stringify({ email, display_name: displayName, password }),
       });
       if (!res.ok) {
+        let msg = 'Failed to check in';
         try {
           const j = await res.json();
-          throw new Error(j?.error || 'Failed to check in');
+          msg = j?.error || msg;
         } catch {
-          const txt = await res.text();
-          throw new Error(txt || 'Failed to check in');
+          // if JSON parsing fails, keep default message
         }
+        // Normalize specific auth errors to a friendlier message
+        if (msg.toLowerCase().includes('incorrect password')) {
+          msg = 'Wrong password';
+        }
+        throw new Error(msg);
       }
       // Mirror cookies in localStorage for client UI conveniences
       try {
@@ -110,7 +115,7 @@ export default function GuestCheckinPage() {
             </div>
           </form>
           <p className="text-xs text-muted mt-4">
-            Forgot your password? <span className="text-accent">Password reset coming soon</span>
+            Forgot your password? <a href="/auth/forgot-password" className="text-accent underline">Reset it here</a>
           </p>
         </section>
       ) : (

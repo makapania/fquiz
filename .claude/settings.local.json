@@ -15,7 +15,11 @@
       "Bash(git branch:*)",
       "Bash(rm:*)",
       "Bash(npm run build:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(git fetch:*)",
+      "WebSearch",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

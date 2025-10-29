@@ -57,39 +57,39 @@ export default async function HomePage() {
   );
 
   return (
-    <main className="space-y-6">
-      <section className="rounded-lg bg-surface p-4 space-y-3">
-        <h2 className="text-xl font-medium">Welcome</h2>
+    <main className="space-y-8">
+      <section className="rounded-lg bg-surface p-6 space-y-4">
+        <h2 className="text-2xl font-semibold">Welcome</h2>
         <p className="text-muted">Study flashcards or take quizzes. Sign in or join as a guest.</p>
         {/* Sign-in on welcome page */}
         <WelcomeWithSession />
       </section>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 items-stretch">
-        <div className="rounded-lg bg-cardSurface p-4 text-cardText flex flex-col min-h-40">
-          <h3 className="text-lg font-semibold">Flashcards</h3>
+      <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 items-stretch">
+        <div className="rounded-lg bg-cardSurface p-6 text-cardText flex flex-col min-h-48">
+          <h3 className="text-xl font-semibold">Flashcards</h3>
           <p>White/off-white surface for readability. Tap to flip.</p>
           <Link href="/sets/new?type=flashcards" className="mt-auto inline-block rounded-md bg-accent px-3 py-1 text-white">Start with Flashcards</Link>
         </div>
-        <div className="rounded-lg bg-surface2 p-4 flex flex-col min-h-40">
-          <h3 className="text-lg font-semibold">Quizzes</h3>
+        <div className="rounded-lg bg-surface2 p-6 flex flex-col min-h-48">
+          <h3 className="text-xl font-semibold">Quizzes</h3>
           <p className="text-muted">Multiple-choice questions with instant or deferred reveal.</p>
           <Link href="/sets/new?type=quiz" className="mt-auto inline-block rounded-md bg-accent px-3 py-1 text-white">Start with Quiz</Link>
         </div>
       </section>
 
-      <section className="rounded-lg bg-surface p-4">
+      <section className="rounded-lg bg-surface p-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Recent Sets</h3>
+          <h3 className="text-xl font-semibold">Recent Sets</h3>
           <Link href="/sets" className="text-accent">View all</Link>
         </div>
-        <ul className="mt-2 space-y-2">
+        <ul className="mt-3 space-y-3">
           {recentWithCounts.length === 0 ? (
             <li className="text-muted">No sets yet. Create one.</li>
           ) : recentWithCounts.map((s) => {
             const countLabel = s.type === 'flashcards' ? `${s.card_count} cards` : `${s.question_count} questions`;
             return (
-              <li key={s.id} className="flex items-center justify-between rounded-md bg-surface2 p-3">
+              <li key={s.id} className="flex items-center justify-between rounded-md bg-surface2 p-4">
                 <div>
                   <p className="font-medium">{s.title}</p>
                   <p className="text-sm text-muted">{s.type} · {s.is_published ? 'Published' : 'Draft'} · {countLabel}</p>
@@ -99,10 +99,6 @@ export default async function HomePage() {
             );
           })}
         </ul>
-      </section>
-
-      <section className="rounded-lg bg-surface p-4">
-        <Link href="/sets" className="rounded-md bg-accent px-4 py-2 text-white">Get Started</Link>
       </section>
     </main>
   );

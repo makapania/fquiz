@@ -20,7 +20,8 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
   const isSignedIn = !!session?.user?.email;
   const [aiSource, setAiSource] = useState<'prompt' | 'upload'>('prompt');
   const [aiPrompt, setAiPrompt] = useState('');
-  const [aiProvider, setAiProvider] = useState<'basic' | 'openai' | 'anthropic' | 'zai' | 'openrouter' | 'google'>('basic');
+  const DEFAULT_AI_PROVIDER = (process.env.NEXT_PUBLIC_DEFAULT_AI_PROVIDER as any) || 'google';
+  const [aiProvider, setAiProvider] = useState<'basic' | 'openai' | 'anthropic' | 'zai' | 'openrouter' | 'google'>(DEFAULT_AI_PROVIDER as any);
   const [aiModel, setAiModel] = useState('');
   const [aiKey, setAiKey] = useState('');
   const [aiFile, setAiFile] = useState<File | null>(null);
@@ -96,7 +97,8 @@ export default function ContentEditor({ id, type }: { id: string; type: 'flashca
       }
     } else if (aiProvider === 'google') {
       if (!aiModel) {
-        setAiModel('gemini-1.5-flash');
+        const DEFAULT_GOOGLE_MODEL = process.env.NEXT_PUBLIC_DEFAULT_GOOGLE_MODEL || 'gemini-2.5-flash';
+        setAiModel(DEFAULT_GOOGLE_MODEL);
       }
     }
     // Load remembered key for this provider if signed-in

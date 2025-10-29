@@ -65,8 +65,9 @@ export default async function SetDetailPage({ params }: { params: { id: string }
     // Check if passcode is expired at DB level
     const isExpired = !!set.passcode_expires_at && new Date(set.passcode_expires_at) < new Date();
 
-    // Use owner bypass if we have owner info, otherwise allow signed-in users to bypass
-    const needsPass = !!set.passcode_required && !hasValidPasscode && !isOwner && !isAuthenticated;
+    // Only require passcode if set has passcode enabled and user hasn't provided valid one
+    // Owners bypass passcode requirement entirely
+    const needsPass = !!set.passcode_required && !hasValidPasscode && !isOwner;
     return (
       <main className="space-y-4">
         <div className="flex items-center justify-between">

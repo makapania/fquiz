@@ -107,20 +107,20 @@ export default async function SetsPage() {
   }
 
   return (
-    <main className="space-y-4">
+    <main className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Sets</h2>
+        <h2 className="text-2xl font-semibold">Sets</h2>
         <Link className="rounded-md bg-accent px-3 py-2 text-white" href="/sets/new">Create set</Link>
       </div>
 
       {/* My Sets */}
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">My Sets</h3>
-        <ul className="space-y-2">
+      <section className="space-y-3">
+        <h3 className="text-xl font-semibold">My Sets</h3>
+        <ul className="space-y-3">
           {mySets.map((s: any) => {
             const countLabel = s.type === 'flashcards' ? `${s.cardCount} cards` : `${s.questionCount} questions`;
             return (
-              <li key={s.id} className="rounded-md bg-surface2 p-3">
+              <li key={s.id} className="rounded-md bg-surface2 p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{s.title}</p>
@@ -138,13 +138,13 @@ export default async function SetsPage() {
       </section>
 
       {/* General Sets */}
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">General Sets</h3>
-        <ul className="space-y-2">
+      <section className="space-y-3">
+        <h3 className="text-xl font-semibold">General Sets</h3>
+        <ul className="space-y-3">
           {generalSets.map((s: any) => {
             const countLabel = s.type === 'flashcards' ? `${s.cardCount} cards` : `${s.questionCount} questions`;
             return (
-              <li key={s.id} className="rounded-md bg-surface2 p-3">
+              <li key={s.id} className="rounded-md bg-surface2 p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{s.title}</p>
